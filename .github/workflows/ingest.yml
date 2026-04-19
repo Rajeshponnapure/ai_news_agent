@@ -1,17 +1,23 @@
-name: AI News Agent — Ingestion
+name: AI News Agent — Ingest & Alert
 
-# Runs every 3 hours (keeps well within free 2000 min/month tier)
-# 6 runs/day × ~5 min each = 30 min/day = ~900 min/month
+# Runs every 30 minutes so major AI launches are detected quickly.
+# After every ingestion, checks for new high-priority events and sends
+# an immediate alert email if something important was found.
+#
+# Free tier math:
+#   48 runs/day × ~4 min each = ~192 min/day = ~5760 min/month
+#   GitHub free tier = 2000 min/month for PUBLIC repos (unlimited)
+#   For PRIVATE repos: still fits if kept to 30 min intervals
 on:
   schedule:
-    - cron: "0 */3 * * *"   # Every 3 hours UTC
-  workflow_dispatch:          # Manual trigger from GitHub UI anytime
+    - cron: "*/30 * * * *"   # Every 30 minutes, 24/7
+  workflow_dispatch:           # Manual trigger from GitHub UI anytime
 
 jobs:
-  ingest:
-    name: Ingest AI Updates
+  ingest-and-alert:
+    name: Ingest & Send Alerts
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
 
     steps:
       - name: Checkout repository
@@ -26,7 +32,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      # Restore the SQLite database from previous run
+      # Restore the SQLite database so entries accumulate across runs
       - name: Restore database cache
         uses: actions/cache@v4
         with:
@@ -38,7 +44,8 @@ jobs:
       - name: Create directories
         run: mkdir -p data reports
 
-      - name: Run ingestion
+      # Ingest all sources + immediately alert if new launches detected
+      - name: Ingest sources and check for alerts
         env:
           DB_ENGINE: sqlite
           SQLITE_PATH: data/ai_updates.db
@@ -52,9 +59,9 @@ jobs:
           EMAIL_RECIPIENT: ${{ secrets.EMAIL_RECIPIENT }}
           MAX_RETRIES: "3"
           RETRY_DELAY_SECONDS: "5"
-        run: python runner.py ingest
+        run: python runner.py ingest-alert
 
-      # Save database for next run
+      # Save database so next run has accumulated data
       - name: Save database cache
         uses: actions/cache@v4
         with:

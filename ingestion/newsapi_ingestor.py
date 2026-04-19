@@ -1,3 +1,7 @@
+"""
+NewsAPI Ingestor — Focused on AI launch events from major companies.
+Covers tech launches, marketing AI, and finance AI — user's core domains.
+"""
 import logging
 from datetime import datetime, timezone, timedelta
 
@@ -7,124 +11,136 @@ from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
-# NewsAPI.org — searches 50,000+ news sources worldwide
 NEWS_API_URL = "https://newsapi.org/v2/everything"
 
-# Search queries — consolidated to stay within free tier (100 requests/day).
-# Each query can use OR to combine multiple topics.
+# Five focused queries — each targets a specific domain
+# Consolidated to stay well within the 100 req/day free tier
 SEARCH_QUERIES = [
-    "artificial intelligence OR generative AI OR LLM OR foundation model",
-    "ChatGPT OR GPT OR Claude OR Gemini OR Llama OR Mistral OR DeepSeek",
-    "AI startup funding OR AI acquisition OR AI chip OR Nvidia GPU",
-    "AI healthcare OR AI finance OR AI robotics OR AI regulation",
-    "AI coding OR AI developer tools OR open source AI",
+    # 1. Top company launches and model releases
+    'OpenAI OR Anthropic OR "Google DeepMind" OR "Meta AI" new release OR launch OR announce',
+    # 2. Microsoft, Amazon, Nvidia, GitHub AI news
+    '"Microsoft AI" OR "GitHub Copilot" OR "Amazon Bedrock" OR "Nvidia AI" launch OR release OR update',
+    # 3. New AI models, agents and tools
+    '"new AI model" OR "AI agent" OR "model release" OR "foundation model" launch',
+    # 4. Marketing AI — user's domain
+    '"AI marketing" OR "generative AI" marketing launch OR tool OR platform',
+    # 5. Finance AI — user's domain
+    '"AI finance" OR "AI trading" OR "fintech AI" OR "AI banking" launch OR announce OR deploy',
+]
+
+# Only include articles about these companies for top-priority alerting
+TOP_COMPANY_PATTERNS = [
+    "openai", "anthropic", "google deepmind", "deepmind", "meta ai",
+    "microsoft", "amazon", "aws", "nvidia", "apple", "github",
+    "mistral", "cohere", "perplexity", "xai", "grok",
+    "stability ai", "hugging face", "langchain",
+]
+
+LAUNCH_KEYWORDS = [
+    "launch", "release", "announce", "introduce", "unveil",
+    "new model", "new agent", "available", "update", "upgrade",
+    "open source", "funding", "acqui", "partnership",
 ]
 
 
 class NewsAPIIngestor:
-    """Fetches AI news from NewsAPI.org — covers 50,000+ sources worldwide."""
-
     def __init__(self):
+        self.client = httpx.Client(timeout=20.0)
         self.api_key = settings.NEWS_API_KEY
-        self.client = httpx.Client(timeout=30.0, follow_redirects=True)
 
-    def _fetch_articles(self, query: str) -> list[dict]:
+    def _is_top_company(self, title: str, description: str) -> bool:
+        text = f"{title} {description}".lower()
+        return any(co in text for co in TOP_COMPANY_PATTERNS)
+
+    def _is_launch(self, title: str, description: str) -> bool:
+        text = f"{title} {description}".lower()
+        return any(kw in text for kw in LAUNCH_KEYWORDS)
+
+    def _fetch_query(self, query: str) -> list[dict]:
         if not self.api_key:
-            logger.warning("NEWS_API_KEY not set, skipping NewsAPI")
             return []
 
-        # Last 24 hours
-        from_date = (datetime.now(timezone.utc) - timedelta(hours=24)).strftime("%Y-%m-%d")
-        to_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        # Look back 24 hours only — we want fresh events
+        from_date = (datetime.now(timezone.utc) - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
         params = {
             "q": query,
             "from": from_date,
-            "to": to_date,
-            "sortBy": "relevancy",
-            "pageSize": 20,
+            "sortBy": "publishedAt",
             "language": "en",
+            "pageSize": 20,
             "apiKey": self.api_key,
         }
+
         try:
             resp = self.client.get(NEWS_API_URL, params=params)
             resp.raise_for_status()
             data = resp.json()
             if data.get("status") != "ok":
-                logger.warning("NewsAPI returned status: %s", data.get("status"))
+                logger.warning("NewsAPI error: %s", data.get("message", "unknown"))
                 return []
-            return data.get("articles", [])
         except Exception as e:
-            logger.warning("NewsAPI fetch failed for query '%s': %s", query, e)
+            logger.warning("NewsAPI request failed: %s", e)
             return []
 
-    def _extract_company(self, article: dict) -> str:
-        """Try to infer the company from the source name or title."""
-        source_name = article.get("source", {}).get("name", "")
-        title = article.get("title", "")
-        text = f"{source_name} {title}".lower()
+        entries = []
+        for article in data.get("articles", []):
+            title = (article.get("title") or "").strip()
+            description = (article.get("description") or "").strip()
+            url = article.get("url", "")
+            published_at = article.get("publishedAt", "")
+            source_name = article.get("source", {}).get("name", "NewsAPI")
 
-        company_map = {
-            "openai": "OpenAI", "chatgpt": "OpenAI", "gpt": "OpenAI",
-            "anthropic": "Anthropic", "claude": "Anthropic",
-            "google": "Google", "gemini": "Google", "deepmind": "Google DeepMind",
-            "microsoft": "Microsoft", "copilot": "Microsoft",
-            "meta": "Meta", "llama": "Meta",
-            "amazon": "Amazon", "aws": "Amazon",
-            "nvidia": "Nvidia",
-            "mistral": "Mistral",
-            "hugging": "Hugging Face",
-            "stability": "Stability AI",
-            "cohere": "Cohere",
-            "perplexity": "Perplexity",
-            "xai": "xAI", "grok": "xAI",
-            "deepseek": "DeepSeek",
-            "intel": "Intel",
-            "ibm": "IBM",
-            "oracle": "Oracle",
-        }
-        for key, company in company_map.items():
-            if key in text:
-                return company
-        return source_name or "NewsAPI"
+            if not title or not url or title == "[Removed]":
+                continue
+            # Skip if not about AI at all
+            if "ai" not in f"{title} {description}".lower():
+                continue
+
+            # Parse timestamp
+            try:
+                ts = datetime.strptime(published_at, "%Y-%m-%dT%H:%M:%SZ").replace(
+                    tzinfo=timezone.utc
+                ).isoformat()
+            except Exception:
+                ts = datetime.now(timezone.utc).isoformat()
+
+            is_top_co = self._is_top_company(title, description)
+            is_launch = self._is_launch(title, description)
+
+            entries.append({
+                "title": title[:300],
+                "company": source_name,
+                "summary": description[:500],
+                "timestamp": ts,
+                "source_url": url,
+                "source_name": "newsapi",
+                "is_launch": is_launch,
+                "is_top_company": is_top_co,
+            })
+
+        return entries
 
     def ingest(self) -> list[dict]:
         if not self.api_key:
-            logger.info("NewsAPI skipped (no API key)")
+            logger.warning("NEWS_API_KEY not set — skipping NewsAPI ingestion")
             return []
 
-        results = []
-        seen_titles = set()
-
+        all_entries = []
         for query in SEARCH_QUERIES:
-            logger.info("NewsAPI query: %s", query)
-            articles = self._fetch_articles(query)
-            for article in articles:
-                title = article.get("title", "").strip()
-                if not title or title == "[Removed]":
-                    continue
-                # Dedup within NewsAPI results
-                title_key = title.lower().strip()
-                if title_key in seen_titles:
-                    continue
-                seen_titles.add(title_key)
+            entries = self._fetch_query(query)
+            logger.info("NewsAPI query: %d items for: %s...", len(entries), query[:50])
+            all_entries.extend(entries)
 
-                published = article.get("publishedAt", "")
-                url = article.get("url", "")
-                description = article.get("description", "") or ""
-                company = self._extract_company(article)
+        # Deduplicate by URL
+        seen_urls = set()
+        unique = []
+        for e in all_entries:
+            if e["source_url"] not in seen_urls:
+                seen_urls.add(e["source_url"])
+                unique.append(e)
 
-                results.append({
-                    "title": title[:300],
-                    "company": company,
-                    "summary": description[:500],
-                    "timestamp": published or datetime.now(timezone.utc).isoformat(),
-                    "source_url": url,
-                    "source_name": "newsapi",
-                })
-
-        logger.info("NewsAPI returned %d unique articles", len(results))
-        return results
+        return unique
 
     def close(self):
         self.client.close()

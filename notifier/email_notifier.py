@@ -1,6 +1,7 @@
-"""Email-only notifier — sends AI digest with HTML body + PDF attachment.
-
-Replaces the old WhatsApp-based notifier. All delivery goes through SMTP email.
+"""
+Email Notifier — two delivery modes:
+  1. send_alert()  — immediate email when a major AI event is detected
+  2. send_digest() — daily summary email with full PDF attachment
 """
 
 import logging
@@ -20,274 +21,63 @@ logger = logging.getLogger(__name__)
 
 IST = timezone(timedelta(hours=5, minutes=30))
 
+# Category display colors for HTML emails
+CATEGORY_COLORS = {
+    "🚀 AI LAUNCHES & RELEASES":   "#e74c3c",
+    "💰 FINANCE & FINTECH AI":      "#2980b9",
+    "📣 MARKETING & GROWTH AI":     "#8e44ad",
+    "💻 AI CODING & DEVELOPER TOOLS": "#27ae60",
+    "⚡ HARDWARE & INFRASTRUCTURE": "#e67e22",
+    "🔬 RESEARCH & SCIENCE":        "#16a085",
+    "📰 OTHER AI NEWS":             "#7f8c8d",
+}
+
+IMPACT_COLORS = {
+    "high":   "#e74c3c",
+    "medium": "#f39c12",
+    "low":    "#95a5a6",
+}
+
+CATEGORY_ORDER = [
+    "🚀 AI LAUNCHES & RELEASES",
+    "💰 FINANCE & FINTECH AI",
+    "📣 MARKETING & GROWTH AI",
+    "💻 AI CODING & DEVELOPER TOOLS",
+    "⚡ HARDWARE & INFRASTRUCTURE",
+    "🔬 RESEARCH & SCIENCE",
+    "📰 OTHER AI NEWS",
+]
+
+
+def _esc(text: str) -> str:
+    """Escape HTML special characters."""
+    return (
+        str(text)
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+        .replace("'", "&#39;")
+    )
+
 
 class EmailNotifier:
-    """Sends AI digest via email with HTML body + PDF attachment."""
+    """Delivers AI news via email — instant alerts and daily digests."""
 
     def __init__(self):
         self.max_retries = settings.MAX_RETRIES
         self.retry_delay = settings.RETRY_DELAY_SECONDS
 
-    # ── Category definitions for organizing updates ──────────────────────────
-
-    CATEGORIES = {
-        "💰 FINANCE & BUSINESS": [
-            "finance", "banking", "fintech", "trading", "investment", "stock",
-            "economy", "market", "revenue", "profit", "ipo", "acquisition",
-            "valuation", "funding", "startup", "enterprise", "business",
-            "corporate", "bank", "wall street", "imf", "federal reserve",
-            "economist", "financial", "commercial", "industry"
-        ],
-        "🏥 MEDICAL & HEALTHCARE": [
-            "healthcare", "medical", "health", "drug", "diagnosis", "clinical",
-            "hospital", "patient", "pharma", "biotech", "biology", "protein",
-            "dna", "genome", "therapy", "treatment", "disease", "medicine",
-            "doctor", "fda", "trial", "vaccine", "mental health"
-        ],
-        "💻 CODING & DEVELOPMENT": [
-            "coding", "programming", "developer", "devops", "software",
-            "github", "code", "debugging", "ide", "api", "sdk", "framework",
-            "library", "package", "npm", "pypi", "repository", "commit",
-            "pull request", "release", "version"
-        ],
-        "🤖 AI TECH & MODELS": [
-            "gpt", "claude", "gemini", "llama", "mistral", "model", "llm",
-            "transformer", "neural", "deep learning", "machine learning",
-            "benchmark", "training", "inference", "dataset", "weights",
-            "checkpoint", "multimodal", "diffusion", "generative ai"
-        ],
-        "🔧 INDUSTRIAL & MANUFACTURING": [
-            "manufacturing", "factory", "robotics", "automation", "industrial",
-            "supply chain", "logistics", "warehouse", "production", "assembly",
-            "quality control", "predictive maintenance", "iot", "sensor"
-        ],
-        "🚗 AUTONOMOUS & VEHICLES": [
-            "autonomous", "self-driving", "vehicle", "car", "tesla", "waymo",
-            "transportation", "mobility", "drone", "uav", "aviation",
-            "shipping", "delivery", "navigation"
-        ],
-        "🔬 RESEARCH & SCIENCE": [
-            "research", "paper", "study", "arxiv", "publication", "academic",
-            "university", "lab", "scientific", "discovery", "breakthrough",
-            "physics", "chemistry", "mathematics", "quantum"
-        ],
-        "⚡ HARDWARE & CHIPS": [
-            "nvidia", "gpu", "tpu", "chip", "hardware", "cuda", "semiconductor",
-            "processor", "cpu", "h100", "h200", "blackwell", "data center",
-            "server", "compute", "accelerator"
-        ],
-        "📱 GENERAL TECH": [
-            "tech", "technology", "app", "software", "platform", "digital",
-            "internet", "cloud", "aws", "azure", "google cloud", "saas"
-        ],
-    }
-
-    CATEGORY_PRIORITY = [
-        "💰 FINANCE & BUSINESS",
-        "🏥 MEDICAL & HEALTHCARE",
-        "💻 CODING & DEVELOPMENT",
-        "🤖 AI TECH & MODELS",
-        "🔧 INDUSTRIAL & MANUFACTURING",
-        "🚗 AUTONOMOUS & VEHICLES",
-        "🔬 RESEARCH & SCIENCE",
-        "⚡ HARDWARE & CHIPS",
-        "📱 GENERAL TECH",
-        "📰 OTHER AI NEWS",
-    ]
-
-    def _categorize(self, update: dict) -> str:
-        """Determine which category an update belongs to."""
-        text = f"{update.get('title', '')} {update.get('summary', '')} {update.get('company', '')}".lower()
-
-        scores = {}
-        for category, keywords in self.CATEGORIES.items():
-            score = sum(1 for kw in keywords if kw in text)
-            if score > 0:
-                scores[category] = score
-
-        if not scores:
-            return "📰 OTHER AI NEWS"
-
-        return max(scores, key=scores.get)
-
-    # ── HTML email body generation ───────────────────────────────────────────
-
-    def _build_html_body(self, updates: list[dict], date_str: str) -> str:
-        """Build a rich HTML email body with all updates categorized."""
-
-        # Group by category
-        categorized: dict[str, list[dict]] = {}
-        for u in updates:
-            cat = self._categorize(u)
-            categorized.setdefault(cat, []).append(u)
-
-        # Category colors (without emojis for CSS)
-        cat_colors = {
-            "💰 FINANCE & BUSINESS": "#2980b9",
-            "🏥 MEDICAL & HEALTHCARE": "#e74c3c",
-            "💻 CODING & DEVELOPMENT": "#2ecc71",
-            "🤖 AI TECH & MODELS": "#9b59b6",
-            "🔧 INDUSTRIAL & MANUFACTURING": "#e67e22",
-            "🚗 AUTONOMOUS & VEHICLES": "#3498db",
-            "🔬 RESEARCH & SCIENCE": "#1abc9c",
-            "⚡ HARDWARE & CHIPS": "#f1c40f",
-            "📱 GENERAL TECH": "#95a5a6",
-            "📰 OTHER AI NEWS": "#bdc3c7",
-        }
-
-        impact_colors = {
-            "high": "#e74c3c",
-            "medium": "#f39c12",
-            "low": "#95a5a6",
-        }
-
-        # Build HTML
-        html_parts = [f"""
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <style>
-                body {{ font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; color: #333; margin: 0; padding: 20px; }}
-                .container {{ max-width: 700px; margin: 0 auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden; }}
-                .header {{ background: linear-gradient(135deg, #2c3e50, #3498db); color: white; padding: 30px; text-align: center; }}
-                .header h1 {{ margin: 0 0 5px 0; font-size: 28px; }}
-                .header .date {{ font-size: 16px; opacity: 0.9; }}
-                .header .stats {{ margin-top: 15px; font-size: 14px; opacity: 0.8; }}
-                .toc {{ padding: 20px 30px; background: #fafafa; border-bottom: 1px solid #eee; }}
-                .toc h2 {{ color: #2c3e50; font-size: 18px; margin: 0 0 10px 0; }}
-                .toc-item {{ display: flex; justify-content: space-between; padding: 4px 0; font-size: 14px; }}
-                .category-section {{ padding: 20px 30px; border-bottom: 1px solid #f0f0f0; }}
-                .category-header {{ padding: 8px 15px; color: white; font-size: 16px; font-weight: bold; border-radius: 6px; margin-bottom: 15px; }}
-                .update-card {{ background: #fafafa; border-radius: 8px; padding: 15px; margin-bottom: 12px; border-left: 4px solid #ddd; }}
-                .update-title {{ font-size: 15px; font-weight: bold; color: #2c3e50; margin-bottom: 5px; }}
-                .update-meta {{ font-size: 12px; color: #7f8c8d; margin-bottom: 8px; }}
-                .update-summary {{ font-size: 13px; color: #555; line-height: 1.5; }}
-                .impact-badge {{ display: inline-block; padding: 2px 8px; border-radius: 4px; color: white; font-size: 11px; font-weight: bold; text-transform: uppercase; }}
-                .source-link {{ color: #3498db; text-decoration: none; font-size: 12px; }}
-                .source-link:hover {{ text-decoration: underline; }}
-                .footer {{ padding: 20px 30px; text-align: center; color: #95a5a6; font-size: 12px; background: #fafafa; }}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>🚀 AI Update Digest</h1>
-                    <div class="date">{date_str}</div>
-                    <div class="stats">📊 {len(updates)} updates across {len(categorized)} categories</div>
-                </div>
-        """]
-
-        # Table of Contents
-        html_parts.append('<div class="toc"><h2>📋 Contents</h2>')
-        for cat in self.CATEGORY_PRIORITY:
-            if cat in categorized:
-                count = len(categorized[cat])
-                html_parts.append(f'<div class="toc-item"><span>{cat}</span><span>{count} items</span></div>')
-        html_parts.append('</div>')
-
-        # Category sections
-        for cat in self.CATEGORY_PRIORITY:
-            if cat not in categorized:
-                continue
-
-            color = cat_colors.get(cat, "#95a5a6")
-            updates_in_cat = categorized[cat]
-
-            # Sort by impact
-            impact_order = {"high": 0, "medium": 1, "low": 2}
-            updates_in_cat.sort(key=lambda u: impact_order.get(u.get("impact_level", "low"), 2))
-
-            html_parts.append(f'<div class="category-section">')
-            html_parts.append(f'<div class="category-header" style="background: {color};">{cat} ({len(updates_in_cat)})</div>')
-
-            for u in updates_in_cat:
-                title = u.get("title", "No Title")
-                company = u.get("company", "Unknown")
-                summary = u.get("summary", "")
-                impact = u.get("impact_level", "medium")
-                url = u.get("source_url", "")
-                impact_color = impact_colors.get(impact, "#95a5a6")
-
-                html_parts.append(f'''
-                <div class="update-card" style="border-left-color: {color};">
-                    <div class="update-title">{self._escape_html(title)}</div>
-                    <div class="update-meta">
-                        <span class="impact-badge" style="background: {impact_color};">{impact}</span>
-                        &nbsp; {self._escape_html(company)}
-                    </div>
-                    {"<div class='update-summary'>" + self._escape_html(summary) + "</div>" if summary and summary != title else ""}
-                    {"<a class='source-link' href='" + url + "'>🔗 Read more</a>" if url else ""}
-                </div>
-                ''')
-
-            html_parts.append('</div>')
-
-        # Footer
-        html_parts.append(f"""
-                <div class="footer">
-                    <p>Generated by AI Agent | {date_str}</p>
-                    <p>Sources: NewsAPI, GitHub Releases, RSS Feeds, Tech Blogs</p>
-                    <p>📎 Full PDF report attached for offline reading</p>
-                </div>
-            </div>
-        </body>
-        </html>
-        """)
-
-        return "\n".join(html_parts)
-
-    def _escape_html(self, text: str) -> str:
-        """Escape HTML special characters."""
-        return (text
-                .replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace('"', "&quot;")
-                .replace("'", "&#39;"))
-
-    def _build_plain_body(self, updates: list[dict], date_str: str) -> str:
-        """Build a plain-text version of the digest."""
-        lines = [
-            f"AI Update Digest - {date_str}",
-            f"Total: {len(updates)} updates",
-            "=" * 50,
-            "",
-        ]
-
-        # Group by category
-        categorized: dict[str, list[dict]] = {}
-        for u in updates:
-            cat = self._categorize(u)
-            categorized.setdefault(cat, []).append(u)
-
-        for cat in self.CATEGORY_PRIORITY:
-            if cat not in categorized:
-                continue
-            lines.append(f"\n{cat}")
-            lines.append("-" * 40)
-            for u in categorized[cat]:
-                title = u.get("title", "No Title")
-                company = u.get("company", "Unknown")
-                impact = u.get("impact_level", "medium").upper()
-                url = u.get("source_url", "")
-                lines.append(f"\n  * {title}")
-                lines.append(f"    Company: {company} | Impact: {impact}")
-                if url:
-                    lines.append(f"    Link: {url}")
-
-        lines.append(f"\n\nGenerated by AI Agent | {date_str}")
-        return "\n".join(lines)
-
-    # ── Email sending ────────────────────────────────────────────────────────
+    # ── SMTP core ────────────────────────────────────────────────────────────
 
     def _send_email(self, subject: str, html_body: str, plain_body: str,
                     pdf_path: str = None) -> bool:
-        """Send email with HTML body + optional PDF attachment."""
+        """Send email with optional PDF attachment."""
         if not settings.EMAIL_ENABLED:
-            logger.error("Email is disabled in settings")
+            logger.error("Email disabled in settings")
             return False
-        if not settings.EMAIL_SENDER or not settings.EMAIL_PASSWORD or not settings.EMAIL_RECIPIENT:
-            logger.error("Email credentials not fully configured (sender/password/recipient)")
+        if not all([settings.EMAIL_SENDER, settings.EMAIL_PASSWORD, settings.EMAIL_RECIPIENT]):
+            logger.error("Email credentials incomplete (sender/password/recipient)")
             return False
 
         msg = MIMEMultipart("mixed")
@@ -295,112 +85,297 @@ class EmailNotifier:
         msg["To"] = settings.EMAIL_RECIPIENT
         msg["Subject"] = subject
 
-        # Body: alternative (HTML + plain text)
         body_part = MIMEMultipart("alternative")
         body_part.attach(MIMEText(plain_body, "plain", "utf-8"))
         body_part.attach(MIMEText(html_body, "html", "utf-8"))
         msg.attach(body_part)
 
-        # Attach PDF if provided
         if pdf_path and os.path.exists(pdf_path):
             try:
                 with open(pdf_path, "rb") as f:
-                    pdf_attachment = MIMEBase("application", "octet-stream")
-                    pdf_attachment.set_payload(f.read())
-
-                encoders.encode_base64(pdf_attachment)
-                pdf_filename = os.path.basename(pdf_path)
-                pdf_attachment.add_header(
-                    "Content-Disposition",
-                    f'attachment; filename="{pdf_filename}"'
-                )
-                msg.attach(pdf_attachment)
-                logger.info("PDF attached: %s", pdf_filename)
+                    att = MIMEBase("application", "octet-stream")
+                    att.set_payload(f.read())
+                encoders.encode_base64(att)
+                att.add_header("Content-Disposition",
+                               f'attachment; filename="{os.path.basename(pdf_path)}"')
+                msg.attach(att)
             except Exception as e:
-                logger.error("Failed to attach PDF: %s", e)
+                logger.error("PDF attach failed: %s", e)
 
-        # Send via SMTP
-        try:
-            if settings.EMAIL_SMTP_PORT == 465:
-                server = smtplib.SMTP_SSL(settings.EMAIL_SMTP_HOST, settings.EMAIL_SMTP_PORT)
-            else:
-                server = smtplib.SMTP(settings.EMAIL_SMTP_HOST, settings.EMAIL_SMTP_PORT)
-                server.starttls()
+        for attempt in range(1, self.max_retries + 1):
+            try:
+                if settings.EMAIL_SMTP_PORT == 465:
+                    srv = smtplib.SMTP_SSL(settings.EMAIL_SMTP_HOST, settings.EMAIL_SMTP_PORT)
+                else:
+                    srv = smtplib.SMTP(settings.EMAIL_SMTP_HOST, settings.EMAIL_SMTP_PORT)
+                    srv.starttls()
+                srv.login(settings.EMAIL_SENDER, settings.EMAIL_PASSWORD)
+                srv.sendmail(settings.EMAIL_SENDER, settings.EMAIL_RECIPIENT, msg.as_string())
+                srv.quit()
+                logger.info("Email sent (attempt %d): %s", attempt, subject[:60])
+                return True
+            except Exception as e:
+                logger.warning("Email attempt %d failed: %s", attempt, e)
+                if attempt < self.max_retries:
+                    time.sleep(self.retry_delay)
 
-            server.login(settings.EMAIL_SENDER, settings.EMAIL_PASSWORD)
-            server.sendmail(settings.EMAIL_SENDER, settings.EMAIL_RECIPIENT, msg.as_string())
-            server.quit()
-            logger.info("Email sent successfully to %s", settings.EMAIL_RECIPIENT)
+        logger.error("Email delivery failed after %d attempts", self.max_retries)
+        return False
+
+    # ── ALERT EMAIL — real-time, compact, immediate ──────────────────────────
+
+    def _build_alert_html(self, updates: list[dict], date_str: str) -> str:
+        """Build a compact, punchy alert email for real-time events."""
+        items_html = ""
+        for u in updates:
+            title   = _esc(u.get("title", ""))
+            company = _esc(u.get("company", ""))
+            summary = _esc(u.get("summary", ""))
+            impact  = u.get("impact_level", "medium")
+            url     = u.get("source_url", "")
+            cat     = u.get("category", "📰 OTHER AI NEWS")
+            is_launch = u.get("is_launch", False)
+
+            badge_color = IMPACT_COLORS.get(impact, "#95a5a6")
+            cat_color   = CATEGORY_COLORS.get(cat, "#7f8c8d")
+            launch_tag  = '<span style="background:#e74c3c;color:#fff;padding:2px 7px;border-radius:3px;font-size:11px;margin-right:6px;font-weight:bold;">🚀 NEW LAUNCH</span>' if is_launch else ""
+
+            link_html = f'<a href="{url}" style="color:#3498db;font-size:12px;text-decoration:none;">→ Read full story</a>' if url else ""
+
+            # Summary only if different from title
+            summary_html = f'<p style="margin:6px 0 0 0;color:#555;font-size:13px;line-height:1.5;">{summary}</p>' if summary and summary.strip() != title.strip() else ""
+
+            items_html += f"""
+            <div style="background:#fff;border-radius:8px;padding:16px;margin-bottom:14px;
+                        border-left:4px solid {cat_color};box-shadow:0 1px 4px rgba(0,0,0,0.07);">
+                <div style="margin-bottom:6px;">
+                    {launch_tag}
+                    <span style="background:{badge_color};color:#fff;padding:2px 8px;
+                                 border-radius:3px;font-size:11px;font-weight:bold;">
+                        {impact.upper()}
+                    </span>
+                    <span style="color:{cat_color};font-size:11px;margin-left:8px;font-weight:bold;">
+                        {_esc(cat)}
+                    </span>
+                </div>
+                <p style="margin:6px 0 4px 0;font-size:15px;font-weight:bold;color:#1a1a2e;">{title}</p>
+                <p style="margin:0 0 6px 0;color:#7f8c8d;font-size:12px;">📌 {company}</p>
+                {summary_html}
+                <div style="margin-top:10px;">{link_html}</div>
+            </div>"""
+
+        count = len(updates)
+        return f"""
+        <html><head><meta charset="utf-8"></head>
+        <body style="font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;margin:0;padding:20px;">
+          <div style="max-width:640px;margin:0 auto;">
+            <div style="background:linear-gradient(135deg,#1a1a2e,#e74c3c);
+                        color:#fff;padding:24px 28px;border-radius:12px 12px 0 0;">
+              <div style="font-size:13px;opacity:0.8;margin-bottom:4px;">⚡ BREAKING AI UPDATE</div>
+              <h1 style="margin:0 0 6px 0;font-size:22px;">
+                🚨 {count} New AI {'Event' if count==1 else 'Events'} Detected
+              </h1>
+              <div style="opacity:0.85;font-size:13px;">{date_str}</div>
+            </div>
+            <div style="background:#fafafa;padding:20px 24px;border-radius:0 0 12px 12px;">
+              <p style="color:#555;font-size:13px;margin:0 0 16px 0;">
+                Major AI {'event' if count==1 else 'events'} just happened. Here's what you need to know:
+              </p>
+              {items_html}
+              <div style="border-top:1px solid #eee;margin-top:20px;padding-top:14px;
+                          color:#aaa;font-size:11px;text-align:center;">
+                AI News Agent • Real-time alerts •
+                Sources: Official blogs, RSS feeds, NewsAPI
+              </div>
+            </div>
+          </div>
+        </body></html>"""
+
+    def _build_alert_plain(self, updates: list[dict], date_str: str) -> str:
+        lines = [f"⚡ BREAKING AI UPDATE — {date_str}",
+                 f"{len(updates)} new AI event(s) detected", "=" * 50, ""]
+        for u in updates:
+            lines.append(f"[{u.get('impact_level','?').upper()}] {u.get('title','')}")
+            if u.get("company"):
+                lines.append(f"  Company : {u['company']}")
+            if u.get("summary") and u.get("summary") != u.get("title"):
+                lines.append(f"  Summary : {u['summary'][:200]}")
+            if u.get("source_url"):
+                lines.append(f"  Link    : {u['source_url']}")
+            lines.append("")
+        return "\n".join(lines)
+
+    def send_alert(self, updates: list[dict]) -> bool:
+        """Send a real-time BREAKING alert email for new AI launch events.
+        Called immediately after ingestion finds important new items.
+        Does NOT attach a PDF — kept compact and fast."""
+        if not updates:
             return True
-        except Exception as e:
-            logger.error("Email send failed: %s", e)
-            return False
 
-    # ── Public API ───────────────────────────────────────────────────────────
+        date_str = datetime.now(IST).strftime("%d %b %Y, %I:%M %p IST")
+        count = len(updates)
+
+        # Build subject with launch emoji for high-visibility
+        companies = list(dict.fromkeys(u.get("company", "") for u in updates[:3]))
+        company_str = ", ".join(c for c in companies if c)
+        subject = f"🚨 AI Alert: {count} new {'launch' if count==1 else 'launches'} — {company_str}"
+
+        html  = self._build_alert_html(updates, date_str)
+        plain = self._build_alert_plain(updates, date_str)
+
+        success = self._send_email(subject, html, plain)
+        if success:
+            # Mark all as alert_sent so we don't re-alert the same items
+            db = get_db()
+            ids = [u["id"] for u in updates if "id" in u]
+            if ids:
+                db.mark_alert_sent(ids)
+            print(f"✅ Alert sent: {count} events → {settings.EMAIL_RECIPIENT}")
+        else:
+            print(f"❌ Alert failed for {count} events")
+        return success
+
+    # ── DIGEST EMAIL — daily full report with PDF ─────────────────────────────
+
+    def _build_digest_html(self, updates: list[dict], date_str: str) -> str:
+        """Rich HTML daily digest, categorized and sorted."""
+        # Group by category
+        cats: dict[str, list[dict]] = {}
+        for u in updates:
+            c = u.get("category", "📰 OTHER AI NEWS")
+            cats.setdefault(c, []).append(u)
+
+        sections = ""
+        for cat in CATEGORY_ORDER:
+            if cat not in cats:
+                continue
+            color   = CATEGORY_COLORS.get(cat, "#7f8c8d")
+            entries = sorted(cats[cat],
+                             key=lambda x: {"high":0,"medium":1,"low":2}.get(x.get("impact_level","low"),2))
+            items = ""
+            for u in entries:
+                title   = _esc(u.get("title", ""))
+                company = _esc(u.get("company", ""))
+                summary = _esc(u.get("summary", ""))
+                impact  = u.get("impact_level", "medium")
+                url     = u.get("source_url", "")
+                badge   = IMPACT_COLORS.get(impact, "#95a5a6")
+                launch_tag = '<span style="color:#e74c3c;font-weight:bold;">🚀 LAUNCH &nbsp;</span>' \
+                             if u.get("is_launch") else ""
+                summary_html = f'<div style="color:#666;font-size:12px;margin-top:5px;line-height:1.5;">{summary}</div>' \
+                               if summary and summary.strip() != title.strip() else ""
+                link_html = f'<a href="{url}" style="color:#3498db;font-size:11px;">→ Read more</a>' if url else ""
+                items += f"""
+                <div style="padding:12px 0;border-bottom:1px solid #f0f0f0;">
+                    {launch_tag}<span style="background:{badge};color:#fff;padding:1px 7px;
+                    border-radius:3px;font-size:10px;font-weight:bold;">{impact.upper()}</span>
+                    <span style="margin-left:8px;font-size:12px;color:#888;">{company}</span>
+                    <div style="font-size:14px;font-weight:bold;color:#1a1a2e;margin-top:5px;">{title}</div>
+                    {summary_html}
+                    <div style="margin-top:6px;">{link_html}</div>
+                </div>"""
+
+            sections += f"""
+            <div style="margin-bottom:24px;">
+                <div style="background:{color};color:#fff;padding:10px 16px;
+                            border-radius:8px;font-weight:bold;font-size:15px;margin-bottom:2px;">
+                    {_esc(cat)} &nbsp;<span style="opacity:0.8;font-size:12px;font-weight:normal;">
+                    ({len(entries)} update{'s' if len(entries)!=1 else ''})</span>
+                </div>
+                <div style="background:#fff;border-radius:0 0 8px 8px;
+                            padding:0 16px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+                    {items}
+                </div>
+            </div>"""
+
+        toc = "".join(
+            f'<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;">'
+            f'<span>{_esc(c)}</span><span style="color:#888;">{len(cats[c])}</span></div>'
+            for c in CATEGORY_ORDER if c in cats
+        )
+
+        return f"""
+        <html><head><meta charset="utf-8"></head>
+        <body style="font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;margin:0;padding:20px;">
+          <div style="max-width:680px;margin:0 auto;background:#fff;border-radius:12px;
+                      box-shadow:0 2px 12px rgba(0,0,0,0.1);overflow:hidden;">
+            <div style="background:linear-gradient(135deg,#1a1a2e,#3498db);
+                        color:#fff;padding:32px;text-align:center;">
+              <h1 style="margin:0 0 8px;font-size:28px;">🚀 AI Update Digest</h1>
+              <div style="opacity:0.9;font-size:16px;">{date_str}</div>
+              <div style="margin-top:14px;opacity:0.85;font-size:13px;">
+                📊 {len(updates)} updates · {len(cats)} categories · AI launches prioritized
+              </div>
+            </div>
+            <div style="padding:20px 28px;background:#fafafa;border-bottom:1px solid #eee;">
+              <div style="font-weight:bold;color:#2c3e50;margin-bottom:10px;">📋 Contents</div>
+              {toc}
+            </div>
+            <div style="padding:24px 28px;">
+              {sections}
+            </div>
+            <div style="padding:16px 28px;text-align:center;color:#999;font-size:11px;
+                        background:#fafafa;border-top:1px solid #eee;">
+              AI News Agent · {date_str} · Sources: OpenAI, Anthropic, Google, Microsoft & 50+ more
+              <br>📎 Full PDF report attached
+            </div>
+          </div>
+        </body></html>"""
+
+    def _build_digest_plain(self, updates: list[dict], date_str: str) -> str:
+        cats: dict[str, list] = {}
+        for u in updates:
+            cats.setdefault(u.get("category", "📰 OTHER AI NEWS"), []).append(u)
+        lines = [f"AI Update Digest — {date_str}", f"Total: {len(updates)} updates", "="*50]
+        for cat in CATEGORY_ORDER:
+            if cat not in cats:
+                continue
+            lines += ["", cat, "-"*40]
+            for u in cats[cat]:
+                lines.append(f"\n  [{u.get('impact_level','?').upper()}] {u.get('title','')}")
+                lines.append(f"  {u.get('company','')} | {u.get('source_url','')}")
+        return "\n".join(lines)
 
     def send_digest(self, updates: list[dict]) -> bool:
-        """Send AI digest via email with HTML body + PDF attachment.
-
-        This is the single entry point for all digest delivery:
-        1. Generates a PDF report
-        2. Builds a rich HTML email with all updates
-        3. Attaches the PDF to the email
-        4. Sends everything in one email
-        5. Marks all updates as sent in the database
-        """
+        """Send full daily digest email with HTML + PDF attachment."""
         if not updates:
-            logger.warning("No updates to send")
+            logger.warning("No updates to send in digest")
             return True
 
         date_str = datetime.now(IST).strftime("%d %b %Y")
 
-        # Step 1: Generate PDF
+        # Generate PDF
         pdf_path = None
         try:
             from reporting.pdf_generator import generate_pdf_report
-            print(f"\n📄 Generating PDF report for {len(updates)} updates...")
+            print(f"\n📄 Generating PDF for {len(updates)} updates...")
             pdf_path = generate_pdf_report(updates)
             if pdf_path and os.path.exists(pdf_path):
-                print(f"✅ PDF generated: {pdf_path}")
-            else:
-                logger.warning("PDF generation returned no path")
+                print(f"✅ PDF ready: {os.path.basename(pdf_path)}")
         except Exception as e:
             logger.error("PDF generation failed: %s", e, exc_info=True)
-            print(f"⚠️ PDF generation failed: {e}")
+            print(f"⚠️  PDF failed: {e}")
 
-        # Step 2: Build email content
-        html_body = self._build_html_body(updates, date_str)
-        plain_body = self._build_plain_body(updates, date_str)
-        subject = f"🚀 AI Updates Digest – {date_str} ({len(updates)} updates)"
+        html  = self._build_digest_html(updates, date_str)
+        plain = self._build_digest_plain(updates, date_str)
 
-        # Step 3: Send with retries
-        for attempt in range(1, self.max_retries + 1):
-            logger.info("Email attempt %d/%d", attempt, self.max_retries)
-            print(f"\n📧 Sending email (attempt {attempt}/{self.max_retries})...")
+        launches = sum(1 for u in updates if u.get("is_launch"))
+        subject  = (f"🚀 AI Digest — {date_str} | "
+                    f"{len(updates)} updates · {launches} launches")
 
-            success = self._send_email(subject, html_body, plain_body, pdf_path)
-            if success:
-                # Step 4: Mark all as sent
-                db = get_db()
-                update_ids = [u["id"] for u in updates if "id" in u]
-                if update_ids:
-                    db.mark_digest_sent(update_ids)
-                    logger.info("Marked %d updates as digest_sent", len(update_ids))
+        print(f"\n📧 Sending digest to {settings.EMAIL_RECIPIENT}...")
+        success = self._send_email(subject, html, plain, pdf_path)
 
-                print(f"\n✅ Email sent to {settings.EMAIL_RECIPIENT}")
-                print(f"   📊 {len(updates)} updates included")
-                if pdf_path:
-                    print(f"   📎 PDF attached: {os.path.basename(pdf_path)}")
-                return True
-
-            if attempt < self.max_retries:
-                logger.info("Retrying in %d seconds...", self.retry_delay)
-                time.sleep(self.retry_delay)
-
-        logger.error("Email delivery failed after %d attempts", self.max_retries)
-        print(f"\n❌ Failed to send email after {self.max_retries} attempts")
-        return False
+        if success:
+            db = get_db()
+            ids = [u["id"] for u in updates if "id" in u]
+            if ids:
+                db.mark_digest_sent(ids)
+                db.mark_alert_sent(ids)     # avoid re-alerting digested items
+            print(f"✅ Digest sent: {len(updates)} updates, {launches} launches")
+        else:
+            print("❌ Digest send failed")
+        return success
 
     def close(self):
-        """No persistent resources to close for email notifier."""
         pass

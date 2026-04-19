@@ -1,13 +1,15 @@
-name: AI News Agent — Daily Email Digest
+name: AI News Agent — Daily Digest
 
-# Runs at 00:30 UTC every day = 06:00 AM IST
+# Runs daily at 00:30 UTC = 06:00 AM IST
+# Sends a comprehensive PDF digest of all AI updates from the past 24 hours.
+# This is a SUMMARY email — real-time alerts are sent by the ingest.yml workflow.
 on:
   schedule:
-    - cron: "30 0 * * *"    # 00:30 UTC = 06:00 IST
+    - cron: "30 0 * * *"    # 00:30 UTC = 06:00 AM IST every day
   workflow_dispatch:          # Manual trigger from GitHub UI anytime
 
 jobs:
-  send-digest:
+  daily-digest:
     name: Generate & Send PDF Digest
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -31,7 +33,7 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y fonts-dejavu-core
 
-      # Restore the most recent database
+      # Get the latest database with all accumulated entries
       - name: Restore database cache
         uses: actions/cache@v4
         with:
@@ -43,7 +45,8 @@ jobs:
       - name: Create directories
         run: mkdir -p data reports
 
-      - name: Generate and send PDF digest
+      # Run a final ingestion pass + send the full digest
+      - name: Generate and send daily PDF digest
         env:
           DB_ENGINE: sqlite
           SQLITE_PATH: data/ai_updates.db
@@ -59,28 +62,22 @@ jobs:
           RETRY_DELAY_SECONDS: "5"
         run: python runner.py both
 
-      # Save the PDF as a GitHub Actions artifact (backup — downloadable from GitHub)
-      - name: Upload PDF report artifact
+      # Keep PDF as downloadable artifact in GitHub (backup)
+      - name: Upload PDF artifact
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: AI-Digest-${{ github.run_number }}-${{ github.run_id }}
+          name: AI-Digest-${{ github.run_number }}
           path: reports/*.pdf
           retention-days: 30
 
-      # Clean up old entries and save updated DB
+      # Clean up old entries + save DB
       - name: Cleanup old database entries
         env:
           SQLITE_PATH: data/ai_updates.db
-        run: |
-          python -c "
-          from database.db import get_db
-          db = get_db()
-          db.cleanup_old(days=7)
-          print('Old entries cleaned up (>7 days)')
-          "
+        run: python runner.py cleanup
 
-      - name: Save updated database cache
+      - name: Save updated database
         uses: actions/cache@v4
         with:
           path: data/ai_updates.db

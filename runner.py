@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """
-runner.py — GitHub Actions entrypoint for AI News Agent.
+runner.py — GitHub Actions / CLI entrypoint for AI News Agent.
 
-Usage:
-    python runner.py ingest      # Run one ingestion cycle
-    python runner.py digest      # Generate and send daily PDF digest
-    python runner.py both        # Ingest then send digest
+Commands:
+    python runner.py ingest        Run one ingestion cycle (fetch + store)
+    python runner.py alert-check   Check for new launch events → send alert email
+    python runner.py digest        Generate PDF + send daily digest email
+    python runner.py ingest-alert  Ingest then immediately check for alerts (combined)
+    python runner.py both          Ingest + digest (used by daily_digest.yml)
 """
 
 import asyncio
@@ -22,13 +24,14 @@ logger = logging.getLogger("runner")
 
 
 def ensure_dirs():
-    """Create necessary directories."""
     Path("data").mkdir(exist_ok=True)
     Path("reports").mkdir(exist_ok=True)
 
 
+# ── Individual commands ───────────────────────────────────────────────────────
+
 async def run_ingestion() -> int:
-    """Run one ingestion cycle and return count of new entries."""
+    """Fetch all sources and store new entries. Returns count of new entries."""
     from ingestion.manager import IngestionManager
     mgr = IngestionManager()
     try:
@@ -39,8 +42,52 @@ async def run_ingestion() -> int:
         mgr.close()
 
 
+def run_alert_check() -> bool:
+    """Check DB for unalerted high-impact launch events and send immediate alert.
+    
+    Returns True if an alert was sent (or nothing to alert), False on send failure.
+    This is called after EVERY ingestion cycle so alerts fire in near real-time.
+    """
+    from database.db import get_db
+    from notifier.email_notifier import EmailNotifier
+
+    db = get_db()
+    new_alerts = db.get_new_alerts()
+
+    if not new_alerts:
+        logger.info("Alert check: no new high-priority events to alert")
+        print("✅ Alert check: nothing new to notify")
+        return True
+
+    # Filter to only items worth alerting: launches from top companies, or high-impact
+    # (get_new_alerts already filters, but log what we found)
+    launches = [u for u in new_alerts if u.get("is_launch")]
+    logger.info(
+        "Alert check: %d new items (%d launches, %d high-impact)",
+        len(new_alerts), len(launches),
+        sum(1 for u in new_alerts if u.get("impact_level") == "high")
+    )
+
+    print(f"\n🚨 Found {len(new_alerts)} new events to alert:")
+    for u in new_alerts:
+        flag = "🚀" if u.get("is_launch") else "📌"
+        print(f"  {flag} [{u.get('impact_level','?').upper()}] {u.get('title','')[:80]}")
+        print(f"       {u.get('company','')} | {u.get('category','')}")
+
+    notifier = EmailNotifier()
+    try:
+        success = notifier.send_alert(new_alerts)
+        if success:
+            logger.info("Alert email sent for %d events", len(new_alerts))
+        else:
+            logger.error("Alert email failed")
+        return success
+    finally:
+        notifier.close()
+
+
 def run_digest() -> bool:
-    """Generate PDF and send email digest. Returns True on success."""
+    """Generate PDF + send full daily digest. Returns True on success."""
     from processing.pipeline import ProcessingPipeline
     from notifier.email_notifier import EmailNotifier
 
@@ -48,52 +95,90 @@ def run_digest() -> bool:
     updates = pipeline.get_top_updates(limit=80)
 
     if not updates:
-        logger.warning("No updates found for digest. Running emergency ingestion...")
+        logger.warning("No updates for digest — running emergency ingestion")
         count = asyncio.run(run_ingestion())
         logger.info("Emergency ingestion: %d entries", count)
         updates = pipeline.get_top_updates(limit=80)
 
     if not updates:
-        logger.error("No updates available even after ingestion. Skipping digest.")
+        logger.error("Still no updates after emergency ingestion")
         return False
 
-    logger.info("Sending digest with %d updates...", len(updates))
+    launches = sum(1 for u in updates if u.get("is_launch"))
+    print(f"\n📊 Digest: {len(updates)} updates ({launches} launches), sending...")
+
     notifier = EmailNotifier()
     try:
         success = notifier.send_digest(updates)
-        if success:
-            logger.info("✅ Digest sent successfully!")
-        else:
-            logger.error("❌ Digest send failed after all retries")
         return success
     finally:
         notifier.close()
 
 
+def run_cleanup():
+    """Remove old entries from the database."""
+    from database.db import get_db
+    db = get_db()
+    db.cleanup_old(days=3)  # Keep 3 days for context
+    logger.info("Database cleanup complete (entries >3 days old removed)")
+    print("🧹 Database cleaned up")
+
+
+# ── Main entrypoint ───────────────────────────────────────────────────────────
+
 def main():
     ensure_dirs()
 
     if len(sys.argv) < 2:
-        print("Usage: python runner.py [ingest|digest|both]")
+        print(__doc__)
         sys.exit(1)
 
     command = sys.argv[1].lower()
 
     if command == "ingest":
+        # Just run ingestion
         count = asyncio.run(run_ingestion())
+        print(f"\n✅ Ingested {count} new entries")
         sys.exit(0 if count >= 0 else 1)
 
+    elif command == "alert-check":
+        # Just check for alerts (without running ingestion first)
+        success = run_alert_check()
+        sys.exit(0 if success else 1)
+
+    elif command == "ingest-alert":
+        # Ingest + immediately check for new alerts (used in ingest.yml)
+        print("=== INGEST + ALERT CHECK ===")
+        count = asyncio.run(run_ingestion())
+        print(f"\n✅ Ingested {count} new entries")
+        if count > 0:
+            # Only check alerts if we actually got new entries
+            success = run_alert_check()
+        else:
+            print("ℹ️  No new entries — skipping alert check")
+            success = True
+        sys.exit(0 if success else 1)
+
     elif command == "digest":
+        # Just send the daily digest
         success = run_digest()
         sys.exit(0 if success else 1)
 
     elif command == "both":
+        # Ingest + send digest (used in daily_digest.yml)
+        print("=== INGEST + DIGEST ===")
         asyncio.run(run_ingestion())
         success = run_digest()
         sys.exit(0 if success else 1)
 
+    elif command == "cleanup":
+        run_cleanup()
+        sys.exit(0)
+
     else:
-        logger.error("Unknown command: %s. Use: ingest | digest | both", command)
+        logger.error("Unknown command: %s", command)
+        print(f"❌ Unknown command: {command}")
+        print("Usage: python runner.py [ingest|alert-check|ingest-alert|digest|both|cleanup]")
         sys.exit(1)
 
 
