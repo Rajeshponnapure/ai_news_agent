@@ -1,0 +1,62 @@
+name: AI News Agent — Ingestion
+
+# Runs every 3 hours (keeps well within free 2000 min/month tier)
+# 6 runs/day × ~5 min each = 30 min/day = ~900 min/month
+on:
+  schedule:
+    - cron: "0 */3 * * *"   # Every 3 hours UTC
+  workflow_dispatch:          # Manual trigger from GitHub UI anytime
+
+jobs:
+  ingest:
+    name: Ingest AI Updates
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # Restore the SQLite database from previous run
+      - name: Restore database cache
+        uses: actions/cache@v4
+        with:
+          path: data/ai_updates.db
+          key: ainews-db-${{ github.run_id }}
+          restore-keys: |
+            ainews-db-
+
+      - name: Create directories
+        run: mkdir -p data reports
+
+      - name: Run ingestion
+        env:
+          DB_ENGINE: sqlite
+          SQLITE_PATH: data/ai_updates.db
+          NEWS_API_KEY: ${{ secrets.NEWS_API_KEY }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          EMAIL_ENABLED: "true"
+          EMAIL_SMTP_HOST: smtp.gmail.com
+          EMAIL_SMTP_PORT: "587"
+          EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_RECIPIENT: ${{ secrets.EMAIL_RECIPIENT }}
+          MAX_RETRIES: "3"
+          RETRY_DELAY_SECONDS: "5"
+        run: python runner.py ingest
+
+      # Save database for next run
+      - name: Save database cache
+        uses: actions/cache@v4
+        with:
+          path: data/ai_updates.db
+          key: ainews-db-${{ github.run_id }}

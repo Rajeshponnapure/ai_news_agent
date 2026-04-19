@@ -17,20 +17,7 @@ class Settings:
         "POSTGRES_DSN", "postgresql://user:pass@localhost:5432/ai_updates"
     )
 
-    # WhatsApp Cloud API (optional — if you have a Meta Business token)
-    WHATSAPP_TOKEN: str = os.getenv("WHATSAPP_TOKEN", "")
-    WHATSAPP_PHONE_NUMBER_ID: str = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
-    WHATSAPP_RECIPIENT_WA_ID: str = os.getenv("WHATSAPP_RECIPIENT_WA_ID", "")
-    WHATSAPP_API_URL: str = os.getenv(
-        "WHATSAPP_API_URL",
-        "https://graph.facebook.com/v18.0",
-    )
-
-    # WhatsApp direct (pywhatkit — sends via WhatsApp Web, no API needed)
-    WHATSAPP_DIRECT_ENABLED: bool = os.getenv("WHATSAPP_DIRECT_ENABLED", "true").lower() == "true"
-    WHATSAPP_DIRECT_PHONE: str = os.getenv("WHATSAPP_DIRECT_PHONE", "")  # e.g. +919876543210
-
-    # Email fallback (SMTP — used when WhatsApp fails)
+    # Email (SMTP) — primary delivery method
     EMAIL_ENABLED: bool = os.getenv("EMAIL_ENABLED", "true").lower() == "true"
     EMAIL_SMTP_HOST: str = os.getenv("EMAIL_SMTP_HOST", "smtp.gmail.com")
     EMAIL_SMTP_PORT: int = int(os.getenv("EMAIL_SMTP_PORT", "587"))
@@ -52,9 +39,6 @@ class Settings:
     # Notification
     MAX_RETRIES: int = int(os.getenv("MAX_RETRIES", "3"))
     RETRY_DELAY_SECONDS: int = int(os.getenv("RETRY_DELAY_SECONDS", "5"))
-
-    # Message
-    MAX_MESSAGE_CHARS: int = int(os.getenv("MAX_MESSAGE_CHARS", "1200"))
 
     @property
     def db_url(self) -> str:

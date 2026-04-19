@@ -126,12 +126,24 @@ class Database:
         finally:
             conn.close()
 
-    def title_exists(self, title: str, company: str, hours: int = 48) -> bool:
+    def title_exists(self, title: str, company: str, hours: int = 48, source_name: str = "") -> bool:
         """Check if title exists within the last N hours (default 48h).
-        This allows fresh daily data to flow while preventing immediate duplicates."""
-        cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+        For blog entries (unreliable timestamps), also check without time window
+        to prevent re-ingesting old articles after the 48h dedup window expires."""
         conn = self._get_conn()
         try:
+            # Always do a permanent exact-match check (no time window) first.
+            # This prevents blog articles with fake now() timestamps from
+            # being re-added every 48 hours.
+            row = conn.execute(
+                "SELECT 1 FROM updates WHERE title = ? AND company = ? LIMIT 1",
+                (title, company),
+            ).fetchone()
+            if row is not None:
+                return True
+
+            # Also check within time window for near-duplicate detection
+            cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
             row = conn.execute(
                 "SELECT 1 FROM updates WHERE title = ? AND company = ? AND timestamp >= ? LIMIT 1",
                 (title, company, cutoff),

@@ -1,0 +1,87 @@
+name: AI News Agent — Daily Email Digest
+
+# Runs at 00:30 UTC every day = 06:00 AM IST
+on:
+  schedule:
+    - cron: "30 0 * * *"    # 00:30 UTC = 06:00 IST
+  workflow_dispatch:          # Manual trigger from GitHub UI anytime
+
+jobs:
+  send-digest:
+    name: Generate & Send PDF Digest
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # Install DejaVu fonts for PDF Unicode support on Ubuntu
+      - name: Install Unicode fonts for PDF
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y fonts-dejavu-core
+
+      # Restore the most recent database
+      - name: Restore database cache
+        uses: actions/cache@v4
+        with:
+          path: data/ai_updates.db
+          key: ainews-db-${{ github.run_id }}
+          restore-keys: |
+            ainews-db-
+
+      - name: Create directories
+        run: mkdir -p data reports
+
+      - name: Generate and send PDF digest
+        env:
+          DB_ENGINE: sqlite
+          SQLITE_PATH: data/ai_updates.db
+          NEWS_API_KEY: ${{ secrets.NEWS_API_KEY }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          EMAIL_ENABLED: "true"
+          EMAIL_SMTP_HOST: smtp.gmail.com
+          EMAIL_SMTP_PORT: "587"
+          EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_RECIPIENT: ${{ secrets.EMAIL_RECIPIENT }}
+          MAX_RETRIES: "3"
+          RETRY_DELAY_SECONDS: "5"
+        run: python runner.py both
+
+      # Save the PDF as a GitHub Actions artifact (backup — downloadable from GitHub)
+      - name: Upload PDF report artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AI-Digest-${{ github.run_number }}-${{ github.run_id }}
+          path: reports/*.pdf
+          retention-days: 30
+
+      # Clean up old entries and save updated DB
+      - name: Cleanup old database entries
+        env:
+          SQLITE_PATH: data/ai_updates.db
+        run: |
+          python -c "
+          from database.db import get_db
+          db = get_db()
+          db.cleanup_old(days=7)
+          print('Old entries cleaned up (>7 days)')
+          "
+
+      - name: Save updated database cache
+        uses: actions/cache@v4
+        with:
+          path: data/ai_updates.db
+          key: ainews-db-${{ github.run_id }}

@@ -10,20 +10,14 @@ logger = logging.getLogger(__name__)
 # NewsAPI.org — searches 50,000+ news sources worldwide
 NEWS_API_URL = "https://newsapi.org/v2/everything"
 
-# Search queries to cover all AI domains
+# Search queries — consolidated to stay within free tier (100 requests/day).
+# Each query can use OR to combine multiple topics.
 SEARCH_QUERIES = [
-    "artificial intelligence",
-    "AI model release OR AI launch",
-    "ChatGPT OR GPT OR Claude OR Gemini OR Llama",
-    "AI startup funding OR AI acquisition",
-    "AI chip OR GPU OR Nvidia OR TPU",
-    "AI healthcare OR AI drug discovery",
-    "AI finance OR fintech AI OR AI banking",
-    "AI robotics OR autonomous vehicle",
-    "AI regulation OR AI policy OR AI ethics",
-    "generative AI OR LLM OR foundation model",
-    "Mistral OR DeepSeek OR xAI OR Perplexity",
-    "AI coding OR AI developer OR AI devops",
+    "artificial intelligence OR generative AI OR LLM OR foundation model",
+    "ChatGPT OR GPT OR Claude OR Gemini OR Llama OR Mistral OR DeepSeek",
+    "AI startup funding OR AI acquisition OR AI chip OR Nvidia GPU",
+    "AI healthcare OR AI finance OR AI robotics OR AI regulation",
+    "AI coding OR AI developer tools OR open source AI",
 ]
 
 

@@ -17,7 +17,7 @@ GITHUB_REPOS = {
     "Meta": ["facebookresearch/llama", "facebookresearch/fairseq", "facebookresearch/segment-anything"],
     "Mistral": ["mistralai/mistral-src", "mistralai/client-python"],
     "Hugging Face": ["huggingface/transformers", "huggingface/diffusers", "huggingface/peft", "huggingface/trl"],
-    "Stability AI": ["stability-ai/generative-models", "stability-ai/stablediffusion3.5"],
+    "Stability AI": ["stability-ai/generative-models"],
     # ── AI Chips & Infrastructure ──
     "Nvidia": ["NVIDIA/TensorRT", "NVIDIA/NeMo", "NVIDIA/cuda-python", "NVIDIA/triton-inference-server"],
     "Intel": ["intel/intel-extension-for-pytorch", "intel/neural-compressor"],
@@ -29,22 +29,18 @@ GITHUB_REPOS = {
     "AnyScale": ["ray-project/ray"],
     "vLLM": ["vllm-project/vllm"],
     "Ollama": ["ollama/ollama"],
-    "LM Studio": ["lmstudio-ai"],
-    # ── AI Startups ──
+    # ── AI Startups (only repos with valid owner/repo paths) ──
     "Cohere": ["cohere-ai/cohere-python-sdk"],
-    "Perplexity": ["perplexity-ai"],
     "Together AI": ["togethercomputer/OpenChatKit"],
     "Replicate": ["replicate/replicate-python"],
-    "Sakana AI": ["SakanaAI"],
     # ── AI Coding ──
-    "Cursor": ["getcursor/cursor"],
-    "Tabnine": ["Tabnine"],
     "Continue": ["continuedev/continue"],
     # ── AI Research ──
     "DeepSeek": ["deepseek-ai/DeepSeek-V2", "deepseek-ai/DeepSeek-Coder"],
     "01.AI": ["01-ai/Yi"],
     "Qwen": ["QwenLM/Qwen"],
-    "xAI": ["xai-org"],
+    # NOTE: Removed org-only entries (Tabnine, perplexity-ai, xai-org, SakanaAI, lmstudio-ai, getcursor/cursor)
+    # because GitHub API requires owner/repo format for /releases endpoint
 }
 
 AI_KEYWORDS = [

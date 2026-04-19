@@ -8,7 +8,7 @@ from apscheduler.triggers.cron import CronTrigger
 from config.settings import settings
 from ingestion.manager import IngestionManager
 from processing.pipeline import ProcessingPipeline
-from notifier.whatsapp import WhatsAppNotifier
+from notifier.email_notifier import EmailNotifier
 from database.db import get_db
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ class AgentScheduler:
         self.scheduler = AsyncIOScheduler(timezone=IST)
         self.ingestion_manager = IngestionManager()
         self.pipeline = ProcessingPipeline()
-        self.notifier = WhatsAppNotifier()
+        self.notifier = EmailNotifier()
 
     async def _ingestion_job(self):
         """Periodic ingestion job – runs every N minutes."""
@@ -36,7 +36,11 @@ class AgentScheduler:
             logger.error("Ingestion job failed: %s", e, exc_info=True)
 
     async def _compile_and_send_job(self):
-        """Daily job at 05:55 IST – compile top updates and send at 06:00 IST."""
+        """Daily job – compile top updates and send PDF digest via email.
+        
+        BUG-13 FIX: Now calls send_digest() which generates PDF + sends email,
+        instead of only sending text-based WhatsApp messages.
+        """
         logger.info("Compile-and-send job triggered")
 
         # Run one final ingestion before compiling
@@ -47,21 +51,24 @@ class AgentScheduler:
 
         # Get top updates
         try:
-            updates = self.pipeline.get_top_updates(limit=10)
+            updates = self.pipeline.get_top_updates(limit=50)
             logger.info("Compiled %d top updates for digest", len(updates))
         except Exception as e:
             logger.error("Pipeline processing failed: %s", e, exc_info=True)
             updates = []
 
-        # Send digest
-        try:
-            success = self.notifier.send_digest(updates)
-            if success:
-                logger.info("Digest sent successfully")
-            else:
-                logger.error("Digest send failed after retries")
-        except Exception as e:
-            logger.error("Digest send error: %s", e, exc_info=True)
+        # Send digest (PDF + HTML email) — BUG-13 FIX
+        if updates:
+            try:
+                success = self.notifier.send_digest(updates)
+                if success:
+                    logger.info("Email digest with PDF sent successfully")
+                else:
+                    logger.error("Email digest send failed after retries")
+            except Exception as e:
+                logger.error("Digest send error: %s", e, exc_info=True)
+        else:
+            logger.warning("No updates to send in daily digest")
 
         # Cleanup old entries
         try:
@@ -100,12 +107,12 @@ class AgentScheduler:
                 timezone=IST,
             ),
             id="compile_send",
-            name="Compile & Send Digest",
+            name="Compile & Send Email Digest",
             max_instances=1,
             misfire_grace_time=300,
         )
         logger.info(
-            "Digest job scheduled daily at %02d:%02d IST",
+            "Email digest job scheduled daily at %02d:%02d IST",
             send_time["hour"],
             send_time["minute"],
         )

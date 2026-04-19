@@ -1,0 +1,81 @@
+# Environment Variables & Secrets
+.env
+.env.local
+.env.*.local
+.env.backup
+*.env
+
+# Database Files — keep folder but ignore DB files
+data/*.db
+data/*.db-journal
+data/*.db-shm
+data/*.db-wal
+*.sqlite
+*.sqlite3
+
+# Generated Reports & PDFs
+reports/
+*.pdf
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environments
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+.venv/
+
+# IDE Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+nohup.out
+
+# WhatsApp Session Data
+PyWhatKit_DB.txt
+*.session
+
+# Temporary Files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Test Outputs
+test_output/
+coverage/
+htmlcov/
+.tox/
+.pytest_cache/
+
+# Keep example files
+!.env.example

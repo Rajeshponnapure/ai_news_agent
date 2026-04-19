@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime, timezone
 from typing import Generator
+from urllib.parse import urljoin, urlparse
 
 import httpx
 from bs4 import BeautifulSoup
@@ -23,30 +24,17 @@ BLOG_PAGES = {
     "Mistral": "https://mistral.ai/news",
     "Cohere": "https://cohere.com/blog",
     "xAI": "https://x.ai/blog",
-    "Perplexity": "https://www.perplexity.ai/",
     "Runway": "https://runwayml.com/blog",
-    "Reka AI": "https://reka.ai/",
-    "Adept AI": "https://www.adept.ai/",
-    "Inflection AI": "https://inflection.ai/",
-    "Character.AI": "https://character.ai/",
-    "Sakana AI": "https://sakana.ai/",
-    "Imbue": "https://www.imbue.com/",
-    "Liquid AI": "https://www.liquid.ai/",
-    "Glean": "https://www.glean.com/blog",
-    "Jasper": "https://www.jasper.ai/blog",
-    "Writer": "https://writer.com/blog/",
-    "AnyScale": "https://www.anyscale.com/blog",
+    "LangChain": "https://blog.langchain.dev/",
     "Together AI": "https://www.together.ai/blog",
     "Replicate": "https://replicate.com/blog",
-    "LangChain": "https://blog.langchain.dev/",
     "Weights & Biases": "https://wandb.ai/fully-connected",
-    # ── AI Finance & Business ──
-    "Bloomberg AI": "https://www.bloomberg.com/topics/artificial-intelligence",
-    "JPMorgan AI": "https://www.jpmorgan.com/technology/artificial-intelligence",
+    "AnyScale": "https://www.anyscale.com/blog",
+    "Writer": "https://writer.com/blog/",
+    "Jasper": "https://www.jasper.ai/blog",
+    "Glean": "https://www.glean.com/blog",
     # ── AI Healthcare ──
     "DeepMind Health": "https://deepmind.google/blog/",
-    "Recursion Pharma": "https://www.recursion.com/blog",
-    "Insitro": "https://insitro.com/",
 }
 
 AI_KEYWORDS = [
@@ -82,6 +70,80 @@ AI_KEYWORDS = [
 ]
 
 
+def _resolve_url(href: str, base_url: str) -> str:
+    """Resolve a relative URL against the base domain, not the listing page path.
+
+    BUG-1 FIX: Use urljoin which correctly resolves relative URLs against
+    the base URL (domain + path), handling both absolute and relative hrefs.
+    """
+    if href.startswith(("http://", "https://")):
+        return href
+    # urljoin handles all relative URL resolution correctly
+    return urljoin(base_url, href)
+
+
+def _extract_date_from_soup(tag) -> str | None:
+    """Try to find a real publish date near an article link.
+
+    BUG-3 FIX: Look for <time> tags, datetime attributes, or date-like text
+    near the article link instead of always using now().
+    """
+    # Walk up the DOM to find a parent container with a <time> tag
+    parent = tag
+    for _ in range(5):  # Check up to 5 levels of parents
+        parent = parent.parent
+        if parent is None:
+            break
+        time_tag = parent.find("time")
+        if time_tag:
+            dt_str = time_tag.get("datetime", "")
+            if dt_str:
+                try:
+                    # Parse ISO format datetime
+                    dt = datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
+                    return dt.isoformat()
+                except (ValueError, TypeError):
+                    pass
+            # Try the text content of <time>
+            text = time_tag.get_text(strip=True)
+            if text:
+                for fmt in ("%B %d, %Y", "%b %d, %Y", "%Y-%m-%d", "%d %b %Y", "%d/%m/%Y"):
+                    try:
+                        dt = datetime.strptime(text, fmt).replace(tzinfo=timezone.utc)
+                        return dt.isoformat()
+                    except ValueError:
+                        continue
+    return None
+
+
+def _extract_summary_from_tag(tag) -> str:
+    """Extract a real summary from the context around an article link.
+
+    BUG-2 FIX: Instead of copying the title as the summary, look for
+    nearby <p> tags, descriptions, or sibling text content.
+    """
+    parent = tag
+    for _ in range(5):
+        parent = parent.parent
+        if parent is None:
+            break
+        # Look for <p> tags that might be a description
+        p_tags = parent.find_all("p", recursive=True)
+        for p in p_tags:
+            text = p.get_text(strip=True)
+            # Must be substantial text, not just a label
+            if len(text) > 40 and text != tag.get_text(strip=True):
+                return text[:500]
+        # Look for elements with description/excerpt class
+        for desc_cls in ["description", "excerpt", "summary", "subtitle", "preview", "blurb"]:
+            desc_el = parent.find(class_=lambda c: c and desc_cls in str(c).lower())
+            if desc_el:
+                text = desc_el.get_text(strip=True)
+                if len(text) > 20:
+                    return text[:500]
+    return ""
+
+
 class BlogIngestor:
     def __init__(self):
         self.client = httpx.Client(timeout=30.0, follow_redirects=True)
@@ -99,31 +161,58 @@ class BlogIngestor:
         text = title.lower()
         return any(kw in text for kw in AI_KEYWORDS)
 
-    def _extract_articles(self, company: str, html: str) -> Generator[dict, None, None]:
+    def _extract_articles(self, company: str, html: str, base_url: str) -> Generator[dict, None, None]:
+        """BUG-4 FIX: Only extract links from article/content containers,
+        not navigation/header/footer/sidebar links."""
         if not html:
             return
         soup = BeautifulSoup(html, "html.parser")
 
-        # Try common article link patterns
-        for a_tag in soup.find_all("a", href=True):
+        # Remove navigation, header, footer, sidebar elements to reduce noise
+        for noise_tag in soup.find_all(["nav", "header", "footer", "aside"]):
+            noise_tag.decompose()
+
+        # Also remove elements with common nav/footer class names
+        for cls_pattern in ["nav", "menu", "sidebar", "footer", "header", "breadcrumb", "cookie"]:
+            for el in soup.find_all(class_=lambda c: c and cls_pattern in str(c).lower()):
+                el.decompose()
+
+        # Now look for article links in the cleaned content
+        # Prefer links inside <article>, <main>, or content-like containers
+        content_container = (
+            soup.find("main")
+            or soup.find("article")
+            or soup.find(class_=lambda c: c and any(k in str(c).lower() for k in ["content", "posts", "articles", "blog-list", "feed"]))
+            or soup  # fallback to full page if no container found
+        )
+
+        for a_tag in content_container.find_all("a", href=True):
             title_text = a_tag.get_text(strip=True)
-            if not title_text or len(title_text) < 10:
+            if not title_text or len(title_text) < 15:
                 continue
+            if len(title_text) > 300:
+                continue  # Skip mega-long text that's probably not a title
             if not self._is_relevant(title_text):
                 continue
 
-            href = a_tag["href"]
-            if href.startswith("/"):
-                # Resolve relative URL
-                base = BLOG_PAGES.get(company, "")
-                if base:
-                    href = base.rstrip("/") + href
+            # BUG-1 FIX: Properly resolve relative URLs
+            href = _resolve_url(a_tag["href"], base_url)
+
+            # BUG-3 FIX: Try to extract real publish date
+            timestamp = _extract_date_from_soup(a_tag)
+            if not timestamp:
+                timestamp = datetime.now(timezone.utc).isoformat()
+
+            # BUG-2 FIX: Try to extract real summary
+            summary = _extract_summary_from_tag(a_tag)
+            if not summary:
+                summary = title_text  # Only use title as last resort
 
             yield {
                 "title": title_text[:300],
                 "company": company,
-                "summary": title_text[:500],  # Blog scraping gives limited summary
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "summary": summary[:500],
+                "timestamp": timestamp,
                 "source_url": href,
                 "source_name": "blog",
             }
@@ -133,7 +222,7 @@ class BlogIngestor:
         for company, url in BLOG_PAGES.items():
             logger.info("Scraping blog for %s", company)
             html = self._fetch_page(url)
-            entries = list(self._extract_articles(company, html))
+            entries = list(self._extract_articles(company, html, url))
             # Deduplicate by title within same company
             seen_titles = set()
             unique = []

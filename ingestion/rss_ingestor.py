@@ -34,10 +34,8 @@ RSS_FEEDS = {
     "AI Alignment Forum": "https://www.alignmentforum.org/rss.xml",
     "Towards Data Science": "https://towardsdatascience.com/feed",
     "Papers With Code": "https://paperswithcode.com/rss",
-    # ── Business & Finance Tech ──
-    "Bloomberg Technology": "https://feeds.bloomberg.com/bloomberg/markets/news.rss",
-    "Reuters Technology": "https://www.reuters.com/arc/outboundfeeds/rss/?outputType=xml&wireContentId=TECH",
-    "Financial Times Tech": "https://www.ft.com/technology?format=rss",
+    # ── Business & Finance Tech (verified accessible feeds only) ──
+    # NOTE: Bloomberg, Reuters, Financial Times removed — paywalled/block automated access
     "CNBC Technology": "https://www.cnbc.com/id/19854910/device/rss/rss.html",
 }
 

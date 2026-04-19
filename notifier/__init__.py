@@ -1,1 +1,1 @@
-from .whatsapp import WhatsAppNotifier
+from .email_notifier import EmailNotifier
