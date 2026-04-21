@@ -3,7 +3,7 @@ Blog Ingestor — Major AI company blogs only.
 Prioritizes official company pages for launch and release announcements.
 """
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Generator
 from urllib.parse import urljoin
 
@@ -174,6 +174,15 @@ class BlogIngestor:
 
             href = _resolve_url(a["href"], base_url)
             ts = _extract_date(a) or datetime.now(timezone.utc).isoformat()
+            
+            # Skip old articles (older than 48 hours)
+            try:
+                dt = datetime.fromisoformat(ts)
+                if datetime.now(timezone.utc) - dt > timedelta(hours=48):
+                    continue
+            except Exception:
+                pass
+
             summary = _extract_summary(a)
 
             is_launch = any(k in title.lower() for k in LAUNCH_KEYWORDS)

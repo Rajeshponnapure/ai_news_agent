@@ -4,7 +4,7 @@ Focuses on official blogs, release notes, and high-signal tech publications.
 No paywalled, low-signal, or opinion-heavy sources.
 """
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Generator
 
 import feedparser
@@ -149,7 +149,11 @@ class RSSIngestor:
             published = entry.get("published_parsed") or entry.get("updated_parsed")
             if published:
                 try:
-                    ts = datetime(*published[:6], tzinfo=timezone.utc).isoformat()
+                    dt = datetime(*published[:6], tzinfo=timezone.utc)
+                    ts = dt.isoformat()
+                    # Skip old articles (older than 48 hours) to avoid flooding
+                    if datetime.now(timezone.utc) - dt > timedelta(hours=48):
+                        continue
                 except Exception:
                     ts = datetime.now(timezone.utc).isoformat()
             else:
