@@ -7,39 +7,39 @@ from typing import Optional
 from config.settings import settings
 
 
-SCHEMA = """
+# These are the base table columns from the original schema
+BASE_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS updates (
     id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
     company TEXT NOT NULL,
     summary TEXT NOT NULL,
     timestamp TEXT NOT NULL,
-    impact_level TEXT NOT NULL CHECK(impact_level IN ('high', 'medium', 'low')),
+    impact_level TEXT NOT NULL DEFAULT 'medium',
     source_url TEXT NOT NULL,
     source_name TEXT NOT NULL DEFAULT '',
-    is_launch INTEGER NOT NULL DEFAULT 0,
-    is_top_company INTEGER NOT NULL DEFAULT 0,
-    category TEXT NOT NULL DEFAULT 'AI TECH',
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    digest_sent INTEGER NOT NULL DEFAULT 0,
-    alert_sent INTEGER NOT NULL DEFAULT 0
-);
-
-CREATE INDEX IF NOT EXISTS idx_updates_timestamp ON updates(timestamp);
-CREATE INDEX IF NOT EXISTS idx_updates_company ON updates(company);
-CREATE INDEX IF NOT EXISTS idx_updates_impact ON updates(impact_level);
-CREATE INDEX IF NOT EXISTS idx_updates_digest_sent ON updates(digest_sent);
-CREATE INDEX IF NOT EXISTS idx_updates_alert_sent ON updates(alert_sent);
-CREATE INDEX IF NOT EXISTS idx_updates_title_company ON updates(title, company);
-CREATE INDEX IF NOT EXISTS idx_updates_is_launch ON updates(is_launch);
+    digest_sent INTEGER NOT NULL DEFAULT 0
+)
 """
 
-# Migration: add new columns if upgrading from old schema
-MIGRATIONS = [
-    "ALTER TABLE updates ADD COLUMN is_launch INTEGER NOT NULL DEFAULT 0",
-    "ALTER TABLE updates ADD COLUMN is_top_company INTEGER NOT NULL DEFAULT 0",
-    "ALTER TABLE updates ADD COLUMN category TEXT NOT NULL DEFAULT 'AI TECH'",
-    "ALTER TABLE updates ADD COLUMN alert_sent INTEGER NOT NULL DEFAULT 0",
+# Columns to add if they don't exist (migration list)
+COLUMN_MIGRATIONS = [
+    ("is_launch",      "ALTER TABLE updates ADD COLUMN is_launch INTEGER NOT NULL DEFAULT 0"),
+    ("is_top_company", "ALTER TABLE updates ADD COLUMN is_top_company INTEGER NOT NULL DEFAULT 0"),
+    ("category",       "ALTER TABLE updates ADD COLUMN category TEXT NOT NULL DEFAULT 'AI TECH'"),
+    ("alert_sent",     "ALTER TABLE updates ADD COLUMN alert_sent INTEGER NOT NULL DEFAULT 0"),
+]
+
+# Indexes (safe to run anytime with IF NOT EXISTS)
+INDEXES = [
+    "CREATE INDEX IF NOT EXISTS idx_updates_timestamp ON updates(timestamp)",
+    "CREATE INDEX IF NOT EXISTS idx_updates_company ON updates(company)",
+    "CREATE INDEX IF NOT EXISTS idx_updates_impact ON updates(impact_level)",
+    "CREATE INDEX IF NOT EXISTS idx_updates_digest_sent ON updates(digest_sent)",
+    "CREATE INDEX IF NOT EXISTS idx_updates_alert_sent ON updates(alert_sent)",
+    "CREATE INDEX IF NOT EXISTS idx_updates_title_company ON updates(title, company)",
+    "CREATE INDEX IF NOT EXISTS idx_updates_is_launch ON updates(is_launch)",
 ]
 
 
@@ -55,18 +55,48 @@ class Database:
         conn.execute("PRAGMA journal_mode=WAL")
         return conn
 
-    def _init_schema(self):
+    def _get_existing_columns(self) -> set:
+        """Return column names currently in the updates table."""
         conn = self._get_conn()
         try:
-            conn.executescript(SCHEMA)
+            rows = conn.execute("PRAGMA table_info(updates)").fetchall()
+            return {row["name"] for row in rows}
+        except Exception:
+            return set()
+        finally:
+            conn.close()
+
+    def _init_schema(self):
+        """Safely create the table and apply any missing column migrations."""
+        # Step 1 — create base table (IF NOT EXISTS — safe on existing DBs)
+        conn = self._get_conn()
+        try:
+            conn.execute(BASE_TABLE_SQL)
             conn.commit()
-            # Apply migrations safely (ignore if column already exists)
-            for migration in MIGRATIONS:
-                try:
-                    conn.execute(migration)
-                    conn.commit()
-                except sqlite3.OperationalError:
-                    pass  # Column already exists
+        finally:
+            conn.close()
+
+        # Step 2 — add missing columns (check PRAGMA first to avoid errors)
+        existing_cols = self._get_existing_columns()
+        for col_name, sql in COLUMN_MIGRATIONS:
+            if col_name in existing_cols:
+                continue
+            conn = self._get_conn()
+            try:
+                conn.execute(sql)
+                conn.commit()
+                existing_cols.add(col_name)
+            except sqlite3.OperationalError:
+                pass  # Shouldn't happen but safe to ignore
+            finally:
+                conn.close()
+
+        # Step 3 — create/update indexes (always safe with IF NOT EXISTS)
+        conn = self._get_conn()
+        try:
+            for idx_sql in INDEXES:
+                conn.execute(idx_sql)
+            conn.commit()
         finally:
             conn.close()
 
