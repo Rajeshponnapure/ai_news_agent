@@ -8,6 +8,9 @@ on:
     - cron: "30 0 * * *"    # 00:30 UTC = 06:00 AM IST every day
   workflow_dispatch:          # Manual trigger from GitHub UI anytime
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   daily-digest:
     name: Generate & Send PDF Digest
