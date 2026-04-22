@@ -70,6 +70,10 @@ temp/
 *.tmp
 *.temp
 
+# Audio files
+data/audio/
+*.mp3
+
 # Test Outputs
 test_output/
 coverage/

@@ -1,0 +1,16 @@
+{
+  "name": "AI News Voice Agent",
+  "short_name": "AI News",
+  "description": "Real-time AI news voice dashboard",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/8636/8636657.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

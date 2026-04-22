@@ -29,6 +29,9 @@ COLUMN_MIGRATIONS = [
     ("is_top_company", "ALTER TABLE updates ADD COLUMN is_top_company INTEGER NOT NULL DEFAULT 0"),
     ("category",       "ALTER TABLE updates ADD COLUMN category TEXT NOT NULL DEFAULT 'AI TECH'"),
     ("alert_sent",     "ALTER TABLE updates ADD COLUMN alert_sent INTEGER NOT NULL DEFAULT 0"),
+    ("voice_generated","ALTER TABLE updates ADD COLUMN voice_generated INTEGER NOT NULL DEFAULT 0"),
+    ("voice_played",   "ALTER TABLE updates ADD COLUMN voice_played INTEGER NOT NULL DEFAULT 0"),
+    ("voice_audio_path", "ALTER TABLE updates ADD COLUMN voice_audio_path TEXT"),
 ]
 
 # Indexes (safe to run anytime with IF NOT EXISTS)
@@ -142,10 +145,6 @@ class Database:
                 SELECT * FROM updates
                 WHERE alert_sent = 0
                   AND timestamp >= ?
-                  AND (
-                      (is_launch = 1 AND is_top_company = 1)
-                      OR impact_level = 'high'
-                  )
                 ORDER BY
                     CASE impact_level WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END,
                     timestamp DESC
@@ -251,6 +250,62 @@ class Database:
         conn = self._get_conn()
         try:
             conn.execute("DELETE FROM updates WHERE timestamp < ? AND digest_sent = 1", (cutoff,))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def get_unprocessed_voice_updates(self) -> list[dict]:
+        """Get high/medium updates from target companies that need audio generated."""
+        # This will be called by the generation worker
+        conn = self._get_conn()
+        try:
+            # We filter for target companies externally or rely on a flag,
+            # but for simplicity, we get things not generated yet
+            rows = conn.execute(
+                """
+                SELECT * FROM updates
+                WHERE voice_generated = 0
+                ORDER BY timestamp ASC
+                LIMIT 10
+                """
+            ).fetchall()
+            return [dict(r) for r in rows]
+        finally:
+            conn.close()
+
+    def mark_voice_generated(self, update_id: str, audio_path: str):
+        conn = self._get_conn()
+        try:
+            conn.execute(
+                "UPDATE updates SET voice_generated = 1, voice_audio_path = ? WHERE id = ?",
+                (audio_path, update_id)
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+    def get_unplayed_voice_updates(self) -> list[dict]:
+        """Get updates that have audio generated but haven't been played in the dashboard."""
+        conn = self._get_conn()
+        try:
+            rows = conn.execute(
+                """
+                SELECT * FROM updates
+                WHERE voice_generated = 1 AND voice_played = 0
+                ORDER BY timestamp ASC
+                """
+            ).fetchall()
+            return [dict(r) for r in rows]
+        finally:
+            conn.close()
+
+    def mark_voice_played(self, update_id: str):
+        conn = self._get_conn()
+        try:
+            conn.execute(
+                "UPDATE updates SET voice_played = 1 WHERE id = ?",
+                (update_id,)
+            )
             conn.commit()
         finally:
             conn.close()

@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/8636/8636657.png">
+    <title>AI News Voice Agent</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --bg-color: #020617;
+            --text-color: #f8fafc;
+            --primary: #3b82f6;
+            --accent: #38bdf8;
+            --playing: #10b981;
+            --glass-bg: rgba(30, 41, 59, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at top right, #0f172a, #020617 70%);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            padding: 24px;
+            box-sizing: border-box;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 32px;
+            margin-top: 20px;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: 0.5px;
+            background: linear-gradient(135deg, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .status {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #94a3b8;
+            margin-top: 8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #ef4444;
+            box-shadow: 0 0 10px #ef4444;
+            transition: all 0.3s ease;
+        }
+
+        .status-dot.connected {
+            background-color: #10b981;
+            box-shadow: 0 0 10px #10b981;
+        }
+
+        .player-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            margin-bottom: 32px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Subtle glowing orb inside the card */
+        .player-card::before {
+            content: '';
+            position: absolute;
+            top: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 150px;
+            background: radial-gradient(circle, rgba(56, 189, 248, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .now-playing-company {
+            position: relative;
+            z-index: 1;
+            color: var(--accent);
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 12px;
+        }
+
+        .now-playing-title {
+            position: relative;
+            z-index: 1;
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 32px;
+            line-height: 1.4;
+            color: #ffffff;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            min-height: 5.6rem;
+        }
+
+        .controls {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 32px;
+        }
+
+        button {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        button:hover {
+            color: var(--accent);
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(2px) scale(0.95);
+        }
+
+        .btn-play-pause {
+            background: linear-gradient(135deg, #3b82f6, #6366f1);
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+            color: white;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .btn-play-pause:hover {
+            transform: scale(1.08) translateY(-4px);
+            box-shadow: 0 15px 30px rgba(59, 130, 246, 0.6);
+            color: white;
+        }
+
+        .btn-play-pause:active {
+            transform: scale(0.95);
+        }
+
+        .btn-skip {
+            padding: 12px;
+            opacity: 0.7;
+        }
+        
+        .btn-skip:hover {
+            opacity: 1;
+        }
+
+        .icon {
+            width: 32px;
+            height: 32px;
+            fill: currentColor;
+        }
+
+        .icon-large {
+            width: 36px;
+            height: 36px;
+        }
+
+        .queue-container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 24px;
+            flex: 1;
+            animation: fadeInUp 1s ease-out;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .queue-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .queue-count-badge {
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--accent);
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+        }
+
+        .queue-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 45vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .queue-item {
+            padding: 16px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            display: flex;
+            flex-direction: column;
+            opacity: 0.6;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+        
+        .queue-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+            opacity: 0.8;
+        }
+        
+        .queue-item.playing {
+            opacity: 1;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            background: linear-gradient(90deg, rgba(16, 185, 129, 0.1) 0%, rgba(255,255,255,0.02) 100%);
+            transform: translateX(4px);
+        }
+
+        .item-company {
+            font-size: 0.75rem;
+            color: var(--accent);
+            font-weight: 700;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .item-title {
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: #e2e8f0;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AI News Agent</h1>
+            <div class="status"><div class="status-dot" id="status-dot"></div><span id="status-text">Disconnected</span></div>
+        </header>
+
+        <div class="player-card">
+            <div class="now-playing-company" id="np-company">No Updates</div>
+            <div class="now-playing-title" id="np-title">Queue is empty. Waiting for news...</div>
+            
+            <audio id="audio-player"></audio>
+            
+            <div class="controls">
+                <!-- <button class="btn-skip" id="btn-prev" aria-label="Previous">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+                </button> -->
+                
+                <button class="btn-play-pause" id="btn-play-pause" aria-label="Play/Pause">
+                    <!-- Play icon by default -->
+                    <svg id="icon-play" class="icon-large" viewBox="0 0 24 24" style="margin-left: 4px;"><path d="M8 5v14l11-7z"/></svg>
+                    <!-- Pause icon (hidden initially) -->
+                    <svg id="icon-pause" class="icon-large" viewBox="0 0 24 24" style="display: none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                </button>
+                
+                <button class="btn-skip" id="btn-next" aria-label="Skip">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="queue-container">
+            <h2 class="queue-title">Up Next <span class="queue-count-badge" id="queue-count">0</span></h2>
+            <ul class="queue-list" id="queue-list">
+                <!-- Queue items will be injected here -->
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // PWA Registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+            .then(() => console.log('Service Worker Registered'))
+            .catch(err => console.error('Service Worker Failed:', err));
+        }
+
+        const audioPlayer = document.getElementById('audio-player');
+        const btnPlayPause = document.getElementById('btn-play-pause');
+        const iconPlay = document.getElementById('icon-play');
+        const iconPause = document.getElementById('icon-pause');
+        const btnNext = document.getElementById('btn-next');
+        const npTitle = document.getElementById('np-title');
+        const npCompany = document.getElementById('np-company');
+        const queueList = document.getElementById('queue-list');
+        const queueCount = document.getElementById('queue-count');
+        const statusText = document.getElementById('status-text');
+        const statusDot = document.getElementById('status-dot');
+
+        let queue = [];
+        let currentIndex = -1;
+        let isPlaying = false;
+        let isAutoplayAllowed = false; // Need first user interaction
+        
+        function setConnectionStatus(isConnected) {
+            if(isConnected) {
+                statusDot.classList.add('connected');
+                statusText.textContent = "Live: Connected";
+            } else {
+                statusDot.classList.remove('connected');
+                statusText.textContent = "Reconnecting...";
+            }
+        }
+
+        // Fetch queue from backend
+        async function fetchQueue() {
+            try {
+                const response = await fetch('/api/queue');
+                const data = await response.json();
+                
+                // Only update if new items are added to avoid interrupting current session logic
+                if (data.queue.length > 0) {
+                    const existingIds = new Set(queue.map(item => item.id));
+                    let added = 0;
+                    
+                    data.queue.forEach(item => {
+                        if (!existingIds.has(item.id)) {
+                            queue.push(item);
+                            added++;
+                        }
+                    });
+                    
+                    if (added > 0) {
+                        renderQueue();
+                        
+                        // If we were empty, start playing the new item if allowed
+                        if (currentIndex === -1 && queue.length > 0) {
+                            loadTrack(0);
+                            if (isAutoplayAllowed) {
+                                playAudio();
+                            }
+                        }
+                    }
+                }
+                setConnectionStatus(true);
+            } catch (err) {
+                console.error("Failed to fetch queue", err);
+                setConnectionStatus(false);
+            }
+        }
+
+        // Mark item as played on backend
+        async function markAsPlayed(id) {
+            try {
+                await fetch('/api/mark-played', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ update_id: id })
+                });
+            } catch (err) {
+                console.error("Failed to mark as played", err);
+            }
+        }
+
+        // Render queue list
+        function renderQueue() {
+            queueList.innerHTML = '';
+            queueCount.textContent = queue.length - (currentIndex > -1 ? currentIndex + 1 : 0);
+            
+            queue.forEach((item, index) => {
+                const li = document.createElement('li');
+                li.className = `queue-item ${index === currentIndex ? 'playing' : ''}`;
+                
+                // Only show upcoming and currently playing
+                if (index >= currentIndex) {
+                    li.innerHTML = `
+                        <div class="item-company">${item.company}</div>
+                        <div class="item-title">${item.title}</div>
+                    `;
+                    queueList.appendChild(li);
+                }
+            });
+        }
+
+        // Load specific track
+        function loadTrack(index) {
+            if (index < 0 || index >= queue.length) return;
+            
+            currentIndex = index;
+            const item = queue[index];
+            
+            npCompany.textContent = item.company.toUpperCase();
+            npTitle.textContent = item.title;
+            audioPlayer.src = `/audio/${item.voice_audio_path}`;
+            
+            renderQueue();
+        }
+
+        // Play audio
+        function playAudio() {
+            if (currentIndex === -1 && queue.length > 0) {
+                loadTrack(0);
+            }
+            if (currentIndex === -1) return;
+            
+            isAutoplayAllowed = true;
+            audioPlayer.play()
+                .then(() => {
+                    isPlaying = true;
+                    iconPlay.style.display = 'none';
+                    iconPause.style.display = 'block';
+                })
+                .catch(e => {
+                    console.error("Playback failed (browser autoplay policy?):", e);
+                    isPlaying = false;
+                    iconPlay.style.display = 'block';
+                    iconPause.style.display = 'none';
+                });
+        }
+
+        // Pause audio
+        function pauseAudio() {
+            audioPlayer.pause();
+            isPlaying = false;
+            iconPlay.style.display = 'block';
+            iconPause.style.display = 'none';
+        }
+
+        // Toggle play/pause
+        btnPlayPause.addEventListener('click', () => {
+            isAutoplayAllowed = true;
+            if (isPlaying) {
+                pauseAudio();
+            } else {
+                playAudio();
+            }
+        });
+
+        // Next track (Skip)
+        btnNext.addEventListener('click', () => {
+            isAutoplayAllowed = true;
+            skipToNext();
+        });
+
+        function skipToNext() {
+            if (currentIndex > -1 && currentIndex < queue.length) {
+                markAsPlayed(queue[currentIndex].id);
+            }
+            
+            if (currentIndex < queue.length - 1) {
+                loadTrack(currentIndex + 1);
+                if (isAutoplayAllowed) playAudio();
+            } else {
+                // Queue finished
+                currentIndex = -1;
+                queue = [];
+                npCompany.textContent = "All Caught Up";
+                npTitle.textContent = "Waiting for new updates...";
+                audioPlayer.src = "";
+                pauseAudio();
+                renderQueue();
+            }
+        }
+
+        // When audio ends automatically
+        audioPlayer.addEventListener('ended', () => {
+            skipToNext();
+        });
+
+        // Initialize and poll
+        fetchQueue();
+        setInterval(fetchQueue, 15000); // Poll every 15s
+
+    </script>
+</body>
+</html>
