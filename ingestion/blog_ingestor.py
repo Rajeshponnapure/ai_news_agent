@@ -6,6 +6,7 @@ import logging
 from datetime import datetime, timezone, timedelta
 from typing import Generator
 from urllib.parse import urljoin
+import re
 
 import httpx
 from bs4 import BeautifulSoup
@@ -76,6 +77,18 @@ def _resolve_url(href: str, base_url: str) -> str:
 
 
 def _extract_date(tag) -> str | None:
+    # Attempt to extract text dates (e.g. "August 24, 2023")
+    text = tag.get_text(strip=True)
+    m = re.search(r'(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},\s+\d{4}', text, re.IGNORECASE)
+    if m:
+        dt_str = m.group(0)
+        for fmt in ("%B %d, %Y", "%b %d, %Y"):
+            try:
+                dt = datetime.strptime(dt_str, fmt)
+                return dt.replace(tzinfo=timezone.utc).isoformat()
+            except Exception:
+                pass
+
     parent = tag
     for _ in range(6):
         parent = getattr(parent, "parent", None)
@@ -173,12 +186,12 @@ class BlogIngestor:
             seen.add(title)
 
             href = _resolve_url(a["href"], base_url)
-            ts = _extract_date(a) or datetime.now(timezone.utc).isoformat()
+            ts = _extract_date(a) or "1970-01-01T00:00:00+00:00"
             
             # Skip old articles (older than 48 hours)
             try:
                 dt = datetime.fromisoformat(ts)
-                if datetime.now(timezone.utc) - dt > timedelta(hours=48):
+                if datetime.now(timezone.utc) - dt > timedelta(hours=24):
                     continue
             except Exception:
                 pass

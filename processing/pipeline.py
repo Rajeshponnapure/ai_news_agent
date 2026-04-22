@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 TOP_COMPANIES = {
     "openai", "anthropic", "google", "deepmind", "google deepmind",
     "microsoft", "amazon", "aws", "meta", "nvidia", "apple", "github",
-    "mistral", "cohere", "perplexity", "xai", "grok", "stability",
+    "mistral", "cohere", "perplexity", "xai", "grok", "elon musk", "stability",
     "hugging face", "langchain",
 }
 

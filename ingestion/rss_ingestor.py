@@ -57,7 +57,7 @@ RSS_FEEDS = {
 TOP_COMPANIES = {
     "openai", "anthropic", "google", "deepmind", "microsoft", "amazon",
     "aws", "meta", "nvidia", "apple", "github", "mistral", "cohere",
-    "perplexity", "xai", "grok", "stability", "hugging face", "langchain",
+    "perplexity", "xai", "grok", "elon musk", "stability", "hugging face", "langchain",
     "gemini", "claude", "chatgpt", "copilot", "bedrock", "sagemaker",
 }
 
@@ -152,12 +152,12 @@ class RSSIngestor:
                     dt = datetime(*published[:6], tzinfo=timezone.utc)
                     ts = dt.isoformat()
                     # Skip old articles (older than 48 hours) to avoid flooding
-                    if datetime.now(timezone.utc) - dt > timedelta(hours=48):
+                    if datetime.now(timezone.utc) - dt > timedelta(hours=24):
                         continue
                 except Exception:
-                    ts = datetime.now(timezone.utc).isoformat()
+                    ts = "1970-01-01T00:00:00+00:00"
             else:
-                ts = datetime.now(timezone.utc).isoformat()
+                ts = "1970-01-01T00:00:00+00:00"
 
             # Strict relevance: must be AI-related
             if not _is_relevant(title, summary):

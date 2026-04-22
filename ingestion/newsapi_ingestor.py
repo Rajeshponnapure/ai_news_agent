@@ -17,7 +17,7 @@ NEWS_API_URL = "https://newsapi.org/v2/everything"
 # Consolidated to stay well within the 100 req/day free tier
 SEARCH_QUERIES = [
     # 1. Top company launches and model releases
-    'OpenAI OR Anthropic OR "Google DeepMind" OR "Meta AI" new release OR launch OR announce',
+    'OpenAI OR Anthropic OR "Google DeepMind" OR "Meta AI" OR xAI OR Grok OR "Elon Musk" new release OR launch OR announce',
     # 2. Microsoft, Amazon, Nvidia, GitHub AI news
     '"Microsoft AI" OR "GitHub Copilot" OR "Amazon Bedrock" OR "Nvidia AI" launch OR release OR update',
     # 3. New AI models, agents and tools
@@ -32,7 +32,7 @@ SEARCH_QUERIES = [
 TOP_COMPANY_PATTERNS = [
     "openai", "anthropic", "google deepmind", "deepmind", "meta ai",
     "microsoft", "amazon", "aws", "nvidia", "apple", "github",
-    "mistral", "cohere", "perplexity", "xai", "grok",
+    "mistral", "cohere", "perplexity", "xai", "grok", "elon musk",
     "stability ai", "hugging face", "langchain",
 ]
 
@@ -103,7 +103,7 @@ class NewsAPIIngestor:
                     tzinfo=timezone.utc
                 ).isoformat()
             except Exception:
-                ts = datetime.now(timezone.utc).isoformat()
+                ts = "1970-01-01T00:00:00+00:00"
 
             is_top_co = self._is_top_company(title, description)
             is_launch = self._is_launch(title, description)

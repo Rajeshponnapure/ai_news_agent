@@ -38,9 +38,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: data/ai_updates.db
-          key: ainews-db-${{ github.run_id }}
+          key: ainews-db-v2-${{ github.run_id }}
           restore-keys: |
-            ainews-db-
+            ainews-db-v2-
 
       - name: Create directories
         run: mkdir -p data reports
@@ -81,4 +81,4 @@ jobs:
         uses: actions/cache@v4
         with:
           path: data/ai_updates.db
-          key: ainews-db-${{ github.run_id }}
+          key: ainews-db-v2-${{ github.run_id }}

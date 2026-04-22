@@ -134,12 +134,14 @@ class Database:
     def get_new_alerts(self) -> list[dict]:
         """Get high-impact launch events from top companies that haven't been alerted yet.
         This drives real-time notifications."""
+        cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
         conn = self._get_conn()
         try:
             rows = conn.execute(
                 """
                 SELECT * FROM updates
                 WHERE alert_sent = 0
+                  AND timestamp >= ?
                   AND (
                       (is_launch = 1 AND is_top_company = 1)
                       OR impact_level = 'high'
@@ -148,7 +150,8 @@ class Database:
                     CASE impact_level WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END,
                     timestamp DESC
                 LIMIT 30
-                """
+                """,
+                (cutoff,)
             ).fetchall()
             return [dict(r) for r in rows]
         finally:

@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Generator
 
 import httpx
@@ -85,6 +85,16 @@ class GitHubIngestor:
                 continue
 
             published = rel.get("published_at", "")
+            
+            # Skip old releases (older than 48 hours)
+            if published:
+                try:
+                    dt = datetime.fromisoformat(published.replace("Z", "+00:00"))
+                    if datetime.now(timezone.utc) - dt > timedelta(hours=24):
+                        continue
+                except Exception:
+                    pass
+                    
             html_url = rel.get("html_url", "")
 
             summary = body[:500] if body else f"Release {tag} for {repo}"
@@ -93,7 +103,7 @@ class GitHubIngestor:
                 "title": f"{repo}: {name}"[:300],
                 "company": company,
                 "summary": summary,
-                "timestamp": published or datetime.now(timezone.utc).isoformat(),
+                "timestamp": published or "1970-01-01T00:00:00+00:00",
                 "source_url": html_url,
                 "source_name": "github",
             }
