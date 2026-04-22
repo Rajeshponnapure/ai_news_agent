@@ -17,7 +17,7 @@ NEWS_API_URL = "https://newsapi.org/v2/everything"
 # Consolidated to stay well within the 100 req/day free tier
 SEARCH_QUERIES = [
     # 1. Top company launches and model releases
-    'OpenAI OR Anthropic OR "Google DeepMind" OR "Meta AI" OR xAI OR Grok OR "Elon Musk" new release OR launch OR announce',
+    'OpenAI OR Anthropic OR "Google DeepMind" OR "Meta AI" OR xAI OR Grok OR "Elon Musk" OR Gemini OR "Google Gemini" new release OR launch OR announce',
     # 2. Microsoft, Amazon, Nvidia, GitHub AI news
     '"Microsoft AI" OR "GitHub Copilot" OR "Amazon Bedrock" OR "Nvidia AI" launch OR release OR update',
     # 3. New AI models, agents and tools
@@ -33,7 +33,7 @@ TOP_COMPANY_PATTERNS = [
     "openai", "anthropic", "google deepmind", "deepmind", "meta ai",
     "microsoft", "amazon", "aws", "nvidia", "apple", "github",
     "mistral", "cohere", "perplexity", "xai", "grok", "elon musk",
-    "stability ai", "hugging face", "langchain",
+    "stability ai", "hugging face", "langchain", "gemini", "google gemini",
 ]
 
 LAUNCH_KEYWORDS = [

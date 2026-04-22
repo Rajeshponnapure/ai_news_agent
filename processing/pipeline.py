@@ -15,7 +15,7 @@ TOP_COMPANIES = {
     "openai", "anthropic", "google", "deepmind", "google deepmind",
     "microsoft", "amazon", "aws", "meta", "nvidia", "apple", "github",
     "mistral", "cohere", "perplexity", "xai", "grok", "elon musk", "stability",
-    "hugging face", "langchain",
+    "hugging face", "langchain", "gemini", "google gemini",
 }
 
 # HIGH impact: actual model/product launches from major players
