@@ -7,6 +7,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from database.db import get_db
 from voice.voice_engine import generate_audio
+from nlp.summarizer import generate_nlp_summary
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -58,9 +59,11 @@ async def background_audio_generator():
                     # Generate natural script
                     title = update.get("title", "")
                     summary = update.get("summary", "")
-                    script = f"Breaking news from {update.get('company', 'AI tech')}. {title}. {summary}"
                     
-                    logger.info(f"Generating audio for: {title[:50]}...")
+                    logger.info(f"Running NLP summarization for: {title[:50]}...")
+                    script = await generate_nlp_summary(company, title, summary)
+                    
+                    logger.info(f"Generating audio for NLP script...")
                     filename = await generate_audio(script)
                     if filename:
                         db.mark_voice_generated(update["id"], filename)

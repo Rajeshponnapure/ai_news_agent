@@ -27,13 +27,44 @@ class AgentScheduler:
         self.notifier = EmailNotifier()
 
     async def _ingestion_job(self):
-        """Periodic ingestion job – runs every N minutes."""
+        """Periodic ingestion job – runs every N minutes.
+        Also checks for breaking/high-impact alerts and sends real-time notifications."""
         logger.info("Scheduled ingestion job triggered")
         try:
             count = await self.ingestion_manager.run_async()
             logger.info("Ingestion job complete: %d new entries", count)
+            
+            # Check for breaking alerts after ingestion
+            if count > 0:
+                await self._check_breaking_alerts()
         except Exception as e:
             logger.error("Ingestion job failed: %s", e, exc_info=True)
+    
+    async def _check_breaking_alerts(self):
+        """Check for high-impact/breaking updates and send real-time alerts."""
+        try:
+            db = get_db()
+            # Get updates from last hour that haven't been alerted yet
+            recent_updates = db.get_unalerted_high_impact(hours=1, min_impact="high")
+            
+            if recent_updates:
+                logger.info(f"Found {len(recent_updates)} breaking updates to alert")
+                
+                # Filter for tech launches (highest priority)
+                launches = [u for u in recent_updates 
+                           if any(kw in u.get('title','').lower() 
+                                 for kw in ['launch', 'released', 'announced', 'new'])]
+                
+                if launches:
+                    logger.info(f"Sending breaking alert for {len(launches)} launches")
+                    self.notifier.send_breaking_alert(launches)
+                    
+                # Mark as alerted
+                for u in recent_updates:
+                    db.mark_alerted(u['id'])
+                    
+        except Exception as e:
+            logger.error(f"Breaking alert check failed: {e}", exc_info=True)
 
     async def _compile_and_send_job(self):
         """Daily job – compile top updates and send PDF digest via email.

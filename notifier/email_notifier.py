@@ -377,5 +377,67 @@ class EmailNotifier:
             print("❌ Digest send failed")
         return success
 
+    def send_breaking_alert(self, launches: list[dict]) -> bool:
+        """Send immediate breaking alert for new tech launches/high-impact news."""
+        if not launches:
+            return True
+        
+        now = datetime.now(IST)
+        time_str = now.strftime("%H:%M IST")
+        
+        # Build HTML alert
+        html_lines = [
+            "<html><body style='font-family: Arial, sans-serif; max-width: 600px;'>",
+            f"<h2 style='color: #e74c3c;'>🚨 BREAKING AI UPDATE</h2>",
+            f"<p style='color: #7f8c8d;'>{time_str}</p>",
+            "<hr style='border: 2px solid #e74c3c; margin: 15px 0;'>",
+        ]
+        
+        for u in launches:
+            company = u.get('company', 'Unknown')
+            title = u.get('title', 'No title')
+            url = u.get('source_url', '')
+            
+            html_lines.append(f"""
+            <div style='margin: 15px 0; padding: 15px; border-left: 4px solid #e74c3c; background: #fef5f5;'>
+                <h3 style='margin: 0; color: #2c3e50;'>{company}</h3>
+                <p style='margin: 8px 0; font-size: 16px;'><strong>{title}</strong></p>
+                {f"<a href='{url}' style='color: #2980b9;'>Read more →</a>" if url else ""}
+            </div>
+            """)
+        
+        html_lines.append("<p style='color: #7f8c8d; font-size: 12px; margin-top: 20px;'>AI Agent - Real-time Alert</p>")
+        html_lines.append("</body></html>")
+        
+        html = "\n".join(html_lines)
+        
+        # Plain text version
+        plain_lines = [
+            "🚨 BREAKING AI UPDATE",
+            f"Time: {time_str}",
+            "=" * 50,
+            "",
+        ]
+        for u in launches:
+            plain_lines.append(f"• {u.get('company', 'Unknown')}: {u.get('title', '')}")
+            if u.get('source_url'):
+                plain_lines.append(f"  {u.get('source_url')}")
+            plain_lines.append("")
+        
+        plain = "\n".join(plain_lines)
+        
+        count = len(launches)
+        subject = f"🚨 AI Alert: {count} new launch{'es' if count > 1 else ''} — {launches[0].get('company', 'AI News')}"
+        
+        print(f"\n🚨 Sending breaking alert for {count} launch(es)...")
+        success = self._send_email(subject, html, plain, pdf_path=None)
+        
+        if success:
+            print(f"✅ Breaking alert sent: {count} item(s)")
+        else:
+            print("❌ Breaking alert failed")
+        
+        return success
+
     def close(self):
         pass

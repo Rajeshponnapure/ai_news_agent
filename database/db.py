@@ -210,6 +210,30 @@ class Database:
         finally:
             conn.close()
 
+    def get_unalerted_high_impact(self, hours: int = 1, min_impact: str = "high") -> list[dict]:
+        """Get high-impact updates from recent hours that haven't been alerted yet."""
+        conn = self._get_conn()
+        try:
+            cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+            
+            rows = conn.execute(
+                """
+                SELECT * FROM updates 
+                WHERE timestamp >= ? 
+                AND alert_sent = 0 
+                AND (impact_level = ? OR is_launch = 1)
+                ORDER BY timestamp DESC
+                """,
+                (cutoff, min_impact),
+            ).fetchall()
+            return [dict(r) for r in rows]
+        finally:
+            conn.close()
+
+    def mark_alerted(self, update_id: str):
+        """Mark a single update as alerted."""
+        self.mark_alert_sent([update_id])
+
     def mark_alert_sent(self, update_ids: list[str]):
         """Mark entries as alerted so they don't trigger duplicate alerts."""
         if not update_ids:

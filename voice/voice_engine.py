@@ -11,8 +11,8 @@ logger = logging.getLogger(__name__)
 AUDIO_DIR = Path("data/audio")
 AUDIO_DIR.mkdir(parents=True, exist_ok=True)
 
-# Default to a professional US English female news anchor voice
-DEFAULT_VOICE = "en-US-AriaNeural"
+# Default to a professional Indian English female news anchor voice
+DEFAULT_VOICE = "en-IN-NeerjaNeural"
 
 async def generate_audio(text: str, voice: str = DEFAULT_VOICE) -> str:
     """
