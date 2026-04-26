@@ -38,7 +38,10 @@ async def generate_nlp_summary(company: str, title: str, summary: str) -> str:
                 return fallback_text
                 
             # Pick the first available model dynamically
-            model_name = models[0]["name"]
+            model_name = models[0].get("name") if models[0] else None
+            if not model_name:
+                logger.warning("Ollama model name not found in response. Falling back to basic text.")
+                return fallback_text
             logger.info(f"Using Ollama model: {model_name}")
             
             payload = {

@@ -61,12 +61,15 @@ async def background_audio_generator():
                     summary = update.get("summary", "")
                     
                     logger.info(f"Running NLP summarization for: {title[:50]}...")
-                    script = await generate_nlp_summary(company, title, summary)
-                    
+                    script = await generate_nlp_summary(update.get("company", "AI tech"), title, summary)
+
                     logger.info(f"Generating audio for NLP script...")
                     filename = await generate_audio(script)
                     if filename:
                         db.mark_voice_generated(update["id"], filename)
+                    else:
+                        logger.error(f"Audio generation failed for update {update['id']}")
+                        db.mark_voice_generated(update["id"], "FAILED")
                 else:
                     # Mark as generated with no path to ignore it
                     db.mark_voice_generated(update["id"], "IGNORED")
