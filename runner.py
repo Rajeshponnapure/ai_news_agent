@@ -66,26 +66,36 @@ def run_alert_check() -> bool:
         print("✅ Alert check: nothing new to notify")
         return True
 
-    # Filter to only items worth alerting: launches from top companies, or high-impact
-    # (get_new_alerts already filters, but log what we found)
-    launches = [u for u in new_alerts if u.get("is_launch")]
+    # Filter to high-impact items only (medium and high, skip low)
+    high_impact = [u for u in new_alerts 
+                   if u.get("impact_level") in ("high", "medium") or u.get("is_launch")]
+    
+    if not high_impact:
+        logger.info("Alert check: %d new items but none are high-impact, skipping alert", len(new_alerts))
+        print(f"ℹ️  Found {len(new_alerts)} updates but none are high-impact (skipping alert)")
+        # Mark low-impact items as alerted so they don't block future checks
+        db.mark_alert_sent([u["id"] for u in new_alerts])
+        return True
+    
+    launches = [u for u in high_impact if u.get("is_launch")]
     logger.info(
-        "Alert check: %d new items (%d launches, %d high-impact)",
-        len(new_alerts), len(launches),
-        sum(1 for u in new_alerts if u.get("impact_level") == "high")
+        "Alert check: %d new items (%d high-impact, %d launches)",
+        len(new_alerts), len(high_impact), len(launches)
     )
 
-    print(f"\n🚨 Found {len(new_alerts)} new events to alert:")
-    for u in new_alerts:
+    print(f"\n🚨 Found {len(high_impact)} HIGH-IMPACT events to alert:")
+    for u in high_impact[:5]:  # Show max 5 in logs
         flag = "🚀" if u.get("is_launch") else "📌"
         print(f"  {flag} [{u.get('impact_level','?').upper()}] {u.get('title','')[:80]}")
         print(f"       {u.get('company','')} | {u.get('category','')}")
+    if len(high_impact) > 5:
+        print(f"  ... and {len(high_impact) - 5} more")
 
     notifier = EmailNotifier()
     try:
-        success = notifier.send_alert(new_alerts)
+        success = notifier.send_alert(high_impact)
         if success:
-            logger.info("Alert email sent for %d events", len(new_alerts))
+            logger.info("Alert email sent for %d events", len(high_impact))
         else:
             logger.error("Alert email failed")
         return success
