@@ -62,42 +62,38 @@ def run_alert_check() -> bool:
     new_alerts = db.get_new_alerts()
 
     if not new_alerts:
-        logger.info("Alert check: no new high-priority events to alert")
+        logger.info("Alert check: no new events to alert")
         print("✅ Alert check: nothing new to notify")
         return True
 
-    # Filter to high-impact items only (medium and high, skip low)
-    high_impact = [u for u in new_alerts 
-                   if u.get("impact_level") in ("high", "medium") or u.get("is_launch")]
+    # Alert on ALL new updates (high, medium, low impact - everything)
+    launches = [u for u in new_alerts if u.get("is_launch")]
+    high_count = sum(1 for u in new_alerts if u.get("impact_level") == "high")
+    medium_count = sum(1 for u in new_alerts if u.get("impact_level") == "medium")
+    low_count = sum(1 for u in new_alerts if u.get("impact_level") == "low")
     
-    if not high_impact:
-        logger.info("Alert check: %d new items but none are high-impact, skipping alert", len(new_alerts))
-        print(f"ℹ️  Found {len(new_alerts)} updates but none are high-impact (skipping alert)")
-        # Mark low-impact items as alerted so they don't block future checks
-        db.mark_alert_sent([u["id"] for u in new_alerts])
-        return True
-    
-    launches = [u for u in high_impact if u.get("is_launch")]
     logger.info(
-        "Alert check: %d new items (%d high-impact, %d launches)",
-        len(new_alerts), len(high_impact), len(launches)
+        "Alert check: %d new items (%d launches, %d high, %d medium, %d low)",
+        len(new_alerts), len(launches), high_count, medium_count, low_count
     )
 
-    print(f"\n🚨 Found {len(high_impact)} HIGH-IMPACT events to alert:")
-    for u in high_impact[:5]:  # Show max 5 in logs
+    print(f"\n🚨 Found {len(new_alerts)} NEW events to alert:")
+    for u in new_alerts[:5]:  # Show max 5 in logs
         flag = "🚀" if u.get("is_launch") else "📌"
         print(f"  {flag} [{u.get('impact_level','?').upper()}] {u.get('title','')[:80]}")
         print(f"       {u.get('company','')} | {u.get('category','')}")
-    if len(high_impact) > 5:
-        print(f"  ... and {len(high_impact) - 5} more")
+    if len(new_alerts) > 5:
+        print(f"  ... and {len(new_alerts) - 5} more")
 
     notifier = EmailNotifier()
     try:
-        success = notifier.send_alert(high_impact)
+        success = notifier.send_alert(new_alerts)
         if success:
-            logger.info("Alert email sent for %d events", len(high_impact))
+            logger.info("Alert email sent for %d events", len(new_alerts))
+            print(f"✅ Alert email sent: {len(new_alerts)} events → {settings.EMAIL_RECIPIENT}")
         else:
             logger.error("Alert email failed")
+            print("❌ Alert email failed")
         return success
     finally:
         notifier.close()
