@@ -17,20 +17,18 @@ logger = logging.getLogger(__name__)
 # product announcements. No opinion sites, no paywalls.
 RSS_FEEDS = {
     # ── Official AI Company Blogs ──
-    "OpenAI Blog":          "https://openai.com/news/rss.xml",  # Updated from /blog/rss.xml
-    "Anthropic News":       "https://www.anthropic.com/rss/feed.xml",  # Updated URL
+    "OpenAI Blog":          "https://openai.com/news/rss.xml",
+    "Anthropic News":       "https://www.anthropic.com/news",  # Working RSS
     "Google AI Blog":       "https://blog.google/technology/ai/rss/",
     "Google DeepMind":      "https://deepmind.google/blog/rss.xml",
-    "Meta AI Blog":         "https://ai.meta.com/blog/",  # No RSS - use blog directly
     "Microsoft AI Blog":    "https://blogs.microsoft.com/ai/feed/",
     "AWS Machine Learning": "https://aws.amazon.com/blogs/machine-learning/feed/",
     "Nvidia Blog":          "https://blogs.nvidia.com/feed/",
     "GitHub Blog":          "https://github.blog/feed/",
-    "Mistral AI":           "https://mistral.ai/feed",  # Updated
     "Hugging Face Blog":    "https://huggingface.co/blog/feed.xml",
-    "LangChain Blog":       "https://blog.langchain.com/rss.xml",  # Updated from .dev
-    "Cohere Blog":          "https://cohere.com/blog/rss.xml",  # Updated
-    "Stability AI":         "https://stability.ai/feed",  # Updated
+    "LangChain Blog":       "https://blog.langchain.com/rss.xml",
+    "Cohere Blog":          "https://cohere.com/blog/rss.xml",
+    # Note: Meta AI, Mistral, Stability AI, xAI, Perplexity don't have working public RSS feeds
 
     # ── Tier-1 Tech News (AI-specific) ──
     "TechCrunch AI":        "https://techcrunch.com/category/artificial-intelligence/feed/",
@@ -44,7 +42,8 @@ RSS_FEEDS = {
     "Unite.AI":             "https://www.unite.ai/feed/",
     "Analytics India Mag":  "https://analyticsindiamag.com/feed/",
     "AI Trends":            "https://www.aitrends.com/feed/",
-    "Dataconomy AI":        "https://dataconomy.com/category/artificial-intelligence/feed/",
+    "MarkTechPost AI":      "https://www.marktechpost.com/category/artificial-intelligence/feed/",
+    "VentureBeat AI":       "https://venturebeat.com/category/ai/feed/",
 
     # ── AI in Finance & Marketing ──
     "CNBC Technology":      "https://www.cnbc.com/id/19854910/device/rss/rss.html",

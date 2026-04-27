@@ -21,28 +21,29 @@ BLOG_PAGES = {
     "Google DeepMind":  "https://deepmind.google/blog/",
     "Google AI":        "https://blog.google/technology/ai/",
     "Meta AI":          "https://ai.meta.com/blog/",
-    "xAI":              "https://x.ai/news",  # Updated from /blog
     "Mistral AI":       "https://mistral.ai/news",
     "Cohere":           "https://cohere.com/blog",
-    "Perplexity":       "https://www.perplexity.ai/hub",  # Updated URL
+    # Note: OpenAI, xAI, Perplexity block bot scraping (403 errors)
+
     # Big Tech AI
     "Microsoft AI":     "https://www.microsoft.com/en-us/ai/blog/",
     "GitHub":           "https://github.blog/",
     "Amazon AWS AI":    "https://aws.amazon.com/blogs/machine-learning/",
     "Nvidia":           "https://blogs.nvidia.com/blog/category/generative-ai/",
     "Apple ML":         "https://machinelearning.apple.com/",
+
     # AI Platforms
     "Hugging Face":     "https://huggingface.co/blog",
     "LangChain":        "https://blog.langchain.dev/",
     "Ollama":           "https://ollama.com/blog",
     "vLLM":             "https://blog.vllm.ai/",
-    # Finance AI (user's domain)
-    "Palantir":         "https://palantir.com/newsroom/blog/",
+
+    # Finance AI
     "Databricks":       "https://www.databricks.com/blog",
-    # Marketing AI (user's domain)
+
+    # Marketing AI
     "HubSpot AI":       "https://blog.hubspot.com/marketing/ai-marketing",
     "Salesforce AI":    "https://www.salesforce.com/blog/tag/artificial-intelligence/",
-    "Adobe AI":         "https://blog.adobe.com/en/topics/ai",
 }
 
 # High-signal launch/event keywords — must appear for the article to matter
