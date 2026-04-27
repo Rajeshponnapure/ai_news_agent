@@ -57,6 +57,7 @@ def run_alert_check() -> bool:
     """
     from database.db import get_db
     from notifier.email_notifier import EmailNotifier
+    from config.settings import settings
 
     db = get_db()
     new_alerts = db.get_new_alerts()
