@@ -40,7 +40,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: data/ai_updates.db
-          key: ainews-db-v2-${{ github.run_id }}
+          key: ainews-db-v2-${{ github.ref_name }}
           restore-keys: |
             ainews-db-v2-
 
@@ -69,4 +69,4 @@ jobs:
         uses: actions/cache@v4
         with:
           path: data/ai_updates.db
-          key: ainews-db-v2-${{ github.run_id }}
+          key: ainews-db-v2-${{ github.ref_name }}

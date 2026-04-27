@@ -431,12 +431,17 @@ class EmailNotifier:
         
         print(f"\n🚨 Sending breaking alert for {count} launch(es)...")
         success = self._send_email(subject, html, plain, pdf_path=None)
-        
+
         if success:
+            # Mark all as alert_sent so we don't re-alert the same items
+            db = get_db()
+            ids = [u["id"] for u in launches if "id" in u]
+            if ids:
+                db.mark_alert_sent(ids)
             print(f"✅ Breaking alert sent: {count} item(s)")
         else:
             print("❌ Breaking alert failed")
-        
+
         return success
 
     def close(self):
