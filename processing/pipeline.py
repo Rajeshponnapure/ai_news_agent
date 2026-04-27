@@ -42,14 +42,13 @@ HIGH_IMPACT_KEYWORDS = [
     "multimodal", "reasoning model",
 ]
 
-# MEDIUM impact: updates, features, research
+# MEDIUM impact: updates, features
 MEDIUM_IMPACT_KEYWORDS = [
     "update", "upgrade", "new feature", "integration",
     "api", "sdk", "new endpoint",
     "partnership", "collaboration", "announcement",
     "series a", "series b", "investment",
-    "research paper", "arxiv", "benchmark",
-    "open source", "checkpoint",
+    "benchmark", "open source", "checkpoint",
     "fine-tune", "rlhf", "alignment",
     "ai marketing", "marketing ai", "ad creative",
     "ai finance", "fintech ai", "trading ai", "ai banking",
@@ -133,13 +132,18 @@ class ProcessingPipeline:
     """Strict pipeline: filters to AI launch events from top companies only."""
 
     def assign_impact(self, title: str, summary: str, is_launch: bool = False,
-                      is_top_company: bool = False) -> str:
+                      is_top_company: bool = False, company: str = "") -> str:
         text = f"{title} {summary}".lower()
+        company_lower = company.lower()
 
         # Check exclusions first
         for kw in EXCLUDE_KEYWORDS:
             if kw in text:
                 return "low"
+
+        # arXiv and research papers should be LOW priority (not breaking alerts)
+        if "arxiv" in company_lower or "arxiv" in text or "research paper" in text:
+            return "low"
 
         # Top company launch = always HIGH
         if is_top_company and is_launch:
@@ -220,7 +224,7 @@ class ProcessingPipeline:
             is_launch = bool(entry.get("is_launch", False))
             is_top_co = bool(entry.get("is_top_company", False))
 
-            impact = self.assign_impact(title, summary, is_launch, is_top_co)
+            impact = self.assign_impact(title, summary, is_launch, is_top_co, company)
 
             # For daily digest, skip truly low-signal content
             if impact == "low" and not is_top_co and not is_launch:
@@ -255,7 +259,8 @@ class ProcessingPipeline:
         for e in entries:
             e["impact_level"] = self.assign_impact(
                 e["title"], e["summary"],
-                bool(e.get("is_launch")), bool(e.get("is_top_company"))
+                bool(e.get("is_launch")), bool(e.get("is_top_company")),
+                e.get("company", "")
             )
             if not e.get("category"):
                 e["category"] = assign_category(e["title"], e["summary"], e.get("company", ""))
@@ -281,7 +286,8 @@ class ProcessingPipeline:
         for e in entries:
             e["impact_level"] = self.assign_impact(
                 e["title"], e["summary"],
-                bool(e.get("is_launch")), bool(e.get("is_top_company"))
+                bool(e.get("is_launch")), bool(e.get("is_top_company")),
+                e.get("company", "")
             )
             if not e.get("category"):
                 e["category"] = assign_category(e["title"], e["summary"], e.get("company", ""))

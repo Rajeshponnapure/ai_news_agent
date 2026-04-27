@@ -50,10 +50,11 @@ RSS_FEEDS = {
     "Forbes Tech":          "https://www.forbes.com/technology/feed/",
     "Marketing AI Inst.":   "https://www.marketingaiinstitute.com/blog/rss.xml",
 
-    # ── Research & Papers ──
+    # ── Research & Papers (limited to avoid flooding) ──
     "Papers With Code":     "https://paperswithcode.com/rss",
-    "arXiv AI":             "http://export.arxiv.org/rss/cs.AI",
-    "arXiv ML":             "http://export.arxiv.org/rss/cs.LG",
+    # Note: arXiv feeds temporarily disabled - too many papers flood alerts
+    # "arXiv AI":             "http://export.arxiv.org/rss/cs.AI",
+    # "arXiv ML":             "http://export.arxiv.org/rss/cs.LG",
 }
 
 # Companies whose launches should ALWAYS be included (never filtered out)
