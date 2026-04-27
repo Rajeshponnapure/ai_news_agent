@@ -17,15 +17,15 @@ NEWS_API_URL = "https://newsapi.org/v2/everything"
 # Consolidated to stay well within the 100 req/day free tier
 SEARCH_QUERIES = [
     # 1. Top company launches and model releases
-    'OpenAI OR Anthropic OR "Google DeepMind" OR "Meta AI" OR xAI OR Grok OR "Elon Musk" OR Gemini OR "Google Gemini" new release OR launch OR announce',
+    '(OpenAI OR Anthropic OR "Google DeepMind" OR "Meta AI" OR xAI OR Grok OR Gemini OR Claude OR ChatGPT) AND (launch OR release OR announce OR update OR new)',
     # 2. Microsoft, Amazon, Nvidia, GitHub AI news
-    '"Microsoft AI" OR "GitHub Copilot" OR "Amazon Bedrock" OR "Nvidia AI" launch OR release OR update',
+    '(Microsoft OR Amazon OR AWS OR Nvidia OR GitHub) AND (AI OR artificial intelligence) AND (launch OR release OR update OR announce)',
     # 3. New AI models, agents and tools
-    '"new AI model" OR "AI agent" OR "model release" OR "foundation model" launch',
+    '("AI model" OR "AI agent" OR "large language model" OR LLM OR chatbot) AND (launch OR release OR new OR announce)',
     # 4. Marketing AI — user's domain
-    '"AI marketing" OR "generative AI" marketing launch OR tool OR platform',
+    '("AI marketing" OR "generative AI" OR "AI tools") AND (marketing OR advertising OR content)',
     # 5. Finance AI — user's domain
-    '"AI finance" OR "AI trading" OR "fintech AI" OR "AI banking" launch OR announce OR deploy',
+    '("AI finance" OR "AI trading" OR "fintech" OR "AI banking") AND (launch OR announce OR deploy OR raise OR funding)',
 ]
 
 # Only include articles about these companies for top-priority alerting
@@ -60,8 +60,8 @@ class NewsAPIIngestor:
         if not self.api_key:
             return []
 
-        # Look back 24 hours only — we want fresh events
-        from_date = (datetime.now(timezone.utc) - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        # Look back 48 hours — capture more fresh events
+        from_date = (datetime.now(timezone.utc) - timedelta(hours=48)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
         params = {
             "q": query,

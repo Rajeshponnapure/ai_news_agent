@@ -16,15 +16,15 @@ logger = logging.getLogger(__name__)
 # ── Official company blogs — ONLY major AI companies ───────────────────────
 BLOG_PAGES = {
     # Core AI Labs
-    "OpenAI":           "https://openai.com/blog",
+    "OpenAI":           "https://openai.com/news",  # Updated URL
     "Anthropic":        "https://www.anthropic.com/news",
-    "Google DeepMind":  "https://deepmind.google/discover/blog/",
+    "Google DeepMind":  "https://deepmind.google/blog/",
     "Google AI":        "https://blog.google/technology/ai/",
     "Meta AI":          "https://ai.meta.com/blog/",
-    "xAI":              "https://x.ai/blog",
+    "xAI":              "https://x.ai/news",  # Updated from /blog
     "Mistral AI":       "https://mistral.ai/news",
     "Cohere":           "https://cohere.com/blog",
-    "Perplexity":       "https://blog.perplexity.ai",
+    "Perplexity":       "https://www.perplexity.ai/hub",  # Updated URL
     # Big Tech AI
     "Microsoft AI":     "https://www.microsoft.com/en-us/ai/blog/",
     "GitHub":           "https://github.blog/",
@@ -191,7 +191,7 @@ class BlogIngestor:
             # Skip old articles (older than 48 hours)
             try:
                 dt = datetime.fromisoformat(ts)
-                if datetime.now(timezone.utc) - dt > timedelta(hours=24):
+                if datetime.now(timezone.utc) - dt > timedelta(hours=48):
                     continue
             except Exception:
                 pass

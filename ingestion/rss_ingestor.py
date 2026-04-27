@@ -17,40 +17,44 @@ logger = logging.getLogger(__name__)
 # product announcements. No opinion sites, no paywalls.
 RSS_FEEDS = {
     # ── Official AI Company Blogs ──
-    "OpenAI Blog":          "https://openai.com/blog/rss.xml",
-    "Anthropic News":       "https://www.anthropic.com/rss.xml",
+    "OpenAI Blog":          "https://openai.com/news/rss.xml",  # Updated from /blog/rss.xml
+    "Anthropic News":       "https://www.anthropic.com/rss/feed.xml",  # Updated URL
     "Google AI Blog":       "https://blog.google/technology/ai/rss/",
     "Google DeepMind":      "https://deepmind.google/blog/rss.xml",
-    "Meta AI Blog":         "https://ai.meta.com/blog/rss/",
+    "Meta AI Blog":         "https://ai.meta.com/blog/",  # No RSS - use blog directly
     "Microsoft AI Blog":    "https://blogs.microsoft.com/ai/feed/",
     "AWS Machine Learning": "https://aws.amazon.com/blogs/machine-learning/feed/",
     "Nvidia Blog":          "https://blogs.nvidia.com/feed/",
     "GitHub Blog":          "https://github.blog/feed/",
-    "Mistral AI":           "https://mistral.ai/news/rss",
+    "Mistral AI":           "https://mistral.ai/feed",  # Updated
     "Hugging Face Blog":    "https://huggingface.co/blog/feed.xml",
-    "LangChain Blog":       "https://blog.langchain.dev/rss/",
-    "Perplexity Blog":      "https://blog.perplexity.ai/rss",
-    "Cohere Blog":          "https://cohere.com/blog/rss",
-    "Stability AI":         "https://stability.ai/news/rss.xml",
-    "xAI Blog":             "https://x.ai/blog/rss.xml",
+    "LangChain Blog":       "https://blog.langchain.com/rss.xml",  # Updated from .dev
+    "Cohere Blog":          "https://cohere.com/blog/rss.xml",  # Updated
+    "Stability AI":         "https://stability.ai/feed",  # Updated
 
     # ── Tier-1 Tech News (AI-specific) ──
-    "TechCrunch AI":        "https://techcrunch.com/tag/artificial-intelligence/feed/",
+    "TechCrunch AI":        "https://techcrunch.com/category/artificial-intelligence/feed/",
     "VentureBeat AI":       "https://venturebeat.com/category/ai/feed/",
-    "The Verge AI":         "https://www.theverge.com/ai-artificial-intelligence/rss/index.xml",
-    "Wired AI":             "https://www.wired.com/tag/artificial-intelligence/rss",
     "Ars Technica AI":      "https://arstechnica.com/tag/ai/feed/",
     "MIT Tech Review AI":   "https://www.technologyreview.com/topic/artificial-intelligence/feed",
-    "ZDNet AI":             "https://www.zdnet.com/topic/artificial-intelligence/rss.xml",
+    "ZDNet AI":             "https://www.zdnet.com/news/rss.xml",
 
-    # ── AI in Finance & Marketing (user's work domain) ──
+    # ── Additional High-Signal AI News ──
+    "AI Business":          "https://aibusiness.com/rss.xml",
+    "Unite.AI":             "https://www.unite.ai/feed/",
+    "Analytics India Mag":  "https://analyticsindiamag.com/feed/",
+    "AI Trends":            "https://www.aitrends.com/feed/",
+    "Dataconomy AI":        "https://dataconomy.com/category/artificial-intelligence/feed/",
+
+    # ── AI in Finance & Marketing ──
     "CNBC Technology":      "https://www.cnbc.com/id/19854910/device/rss/rss.html",
     "Forbes Tech":          "https://www.forbes.com/technology/feed/",
     "Marketing AI Inst.":   "https://www.marketingaiinstitute.com/blog/rss.xml",
 
     # ── Research & Papers ──
     "Papers With Code":     "https://paperswithcode.com/rss",
-    "AI Alignment Forum":   "https://www.alignmentforum.org/rss.xml",
+    "arXiv AI":             "http://export.arxiv.org/rss/cs.AI",
+    "arXiv ML":             "http://export.arxiv.org/rss/cs.LG",
 }
 
 # Companies whose launches should ALWAYS be included (never filtered out)
@@ -152,7 +156,7 @@ class RSSIngestor:
                     dt = datetime(*published[:6], tzinfo=timezone.utc)
                     ts = dt.isoformat()
                     # Skip old articles (older than 48 hours) to avoid flooding
-                    if datetime.now(timezone.utc) - dt > timedelta(hours=24):
+                    if datetime.now(timezone.utc) - dt > timedelta(hours=48):
                         continue
                 except Exception:
                     ts = "1970-01-01T00:00:00+00:00"
