@@ -30,7 +30,7 @@ GITHUB_REPOS = {
     "vLLM": ["vllm-project/vllm"],
     "Ollama": ["ollama/ollama"],
     # ── AI Startups (only repos with valid owner/repo paths) ──
-    "Cohere": ["cohere-ai/cohere-python-sdk"],
+    "Cohere": ["cohere-ai/cohere-developer-experience"],
     "Together AI": ["togethercomputer/OpenChatKit"],
     "Replicate": ["replicate/replicate-python"],
     # ── AI Coding ──

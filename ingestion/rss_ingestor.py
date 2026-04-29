@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 RSS_FEEDS = {
     # ── Official AI Company Blogs ──
     "OpenAI Blog":          "https://openai.com/news/rss.xml",
-    "Anthropic News":       "https://www.anthropic.com/news",  # Working RSS
+    "Anthropic News":       "https://www.anthropic.com/news/index.xml",  # Working RSS
     "Google AI Blog":       "https://blog.google/technology/ai/rss/",
     "Google DeepMind":      "https://deepmind.google/blog/rss.xml",
     "Microsoft AI Blog":    "https://blogs.microsoft.com/ai/feed/",
@@ -41,7 +41,8 @@ RSS_FEEDS = {
     "AI Business":          "https://aibusiness.com/rss.xml",
     "Unite.AI":             "https://www.unite.ai/feed/",
     "Analytics India Mag":  "https://analyticsindiamag.com/feed/",
-    "AI Trends":            "https://www.aitrends.com/feed/",
+    # Note: AI Trends RSS times out frequently - disabled
+    # "AI Trends":            "https://www.aitrends.com/feed/",
     "MarkTechPost AI":      "https://www.marktechpost.com/category/artificial-intelligence/feed/",
     "VentureBeat AI":       "https://venturebeat.com/category/ai/feed/",
 

@@ -36,7 +36,7 @@ BLOG_PAGES = {
     "Hugging Face":     "https://huggingface.co/blog",
     "LangChain":        "https://blog.langchain.dev/",
     "Ollama":           "https://ollama.com/blog",
-    "vLLM":             "https://blog.vllm.ai/",
+    "vLLM":             "https://vllm.ai/blog/",
 
     # Finance AI
     "Databricks":       "https://www.databricks.com/blog",
