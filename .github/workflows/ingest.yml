@@ -10,7 +10,7 @@ name: AI News Agent — Ingest & Alert
 #   For PRIVATE repos: still fits if kept to 30 min intervals
 on:
   schedule:
-    - cron: "*/15 * * * *"   # Every 15 minutes, 24/7
+    - cron: "*/5 * * * *"   # Every 5 minutes (GitHub max frequency) for near real-time updates
   workflow_dispatch:           # Manual trigger from GitHub UI anytime
 
 env:

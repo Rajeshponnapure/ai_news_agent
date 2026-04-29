@@ -51,13 +51,14 @@ async def run_ingestion() -> int:
 
 
 def run_alert_check() -> bool:
-    """Check DB for unalerted HIGH-IMPACT launch events and send immediate alert.
+    """Check DB for unalerted HIGH/MEDIUM impact events and send immediate alert.
     
-    STRICT RULES to prevent duplicate emails:
-    - ONLY HIGH priority items qualify for immediate alerts
-    - Must be from top AI companies OR marked as product launches
-    - Double-check database state before sending
-    - Max 5 items per alert to prevent flooding
+    REAL-TIME RULES:
+    - Check every 5 minutes for fresh updates
+    - Only look back 2 hours (real-time only, no old news)
+    - Include HIGH and MEDIUM priority items
+    - STRICT deduplication: double-check alert_sent flag before sending
+    - Send ALL new items (no limit) - user wants comprehensive updates
     
     Returns True if an alert was sent (or nothing to alert), False on send failure.
     """
@@ -67,18 +68,19 @@ def run_alert_check() -> bool:
 
     db = get_db()
     
-    # Get all unalerted items from last 6 hours only (shorter window = less duplicates)
-    cutoff = (datetime.now(timezone.utc) - timedelta(hours=6)).isoformat()
+    # Get all unalerted HIGH and MEDIUM items from last 2 hours (real-time updates only)
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat()
     conn = db._get_conn()
     try:
         rows = conn.execute(
             """
             SELECT * FROM updates
             WHERE alert_sent = 0
-              AND impact_level = 'high'
+              AND impact_level IN ('high', 'medium')
               AND timestamp >= ?
-            ORDER BY timestamp DESC
-            LIMIT 5
+            ORDER BY 
+                CASE impact_level WHEN 'high' THEN 0 ELSE 1 END,
+                timestamp DESC
             """,
             (cutoff,)
         ).fetchall()
