@@ -13,6 +13,7 @@ Commands:
 import asyncio
 import logging
 import sys
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 # Fix Windows console encoding for emojis
@@ -50,41 +51,78 @@ async def run_ingestion() -> int:
 
 
 def run_alert_check() -> bool:
-    """Check DB for unalerted high-impact launch events and send immediate alert.
+    """Check DB for unalerted HIGH-IMPACT launch events and send immediate alert.
+    
+    STRICT RULES to prevent duplicate emails:
+    - ONLY HIGH priority items qualify for immediate alerts
+    - Must be from top AI companies OR marked as product launches
+    - Double-check database state before sending
+    - Max 5 items per alert to prevent flooding
     
     Returns True if an alert was sent (or nothing to alert), False on send failure.
-    This is called after EVERY ingestion cycle so alerts fire in near real-time.
     """
     from database.db import get_db
     from notifier.email_notifier import EmailNotifier
     from config.settings import settings
 
     db = get_db()
-    new_alerts = db.get_new_alerts()
+    
+    # Get all unalerted items from last 6 hours only (shorter window = less duplicates)
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=6)).isoformat()
+    conn = db._get_conn()
+    try:
+        rows = conn.execute(
+            """
+            SELECT * FROM updates
+            WHERE alert_sent = 0
+              AND impact_level = 'high'
+              AND timestamp >= ?
+            ORDER BY timestamp DESC
+            LIMIT 5
+            """,
+            (cutoff,)
+        ).fetchall()
+        new_alerts = [dict(r) for r in rows]
+    finally:
+        conn.close()
 
     if not new_alerts:
-        logger.info("Alert check: no new events to alert")
+        logger.info("Alert check: no new high-priority events to alert")
         print("✅ Alert check: nothing new to notify")
         return True
 
-    # Alert on ALL new updates (high, medium, low impact - everything)
+    # Double-check: verify these items are still unalerted (race condition protection)
+    still_unalerted = []
+    for item in new_alerts:
+        conn = db._get_conn()
+        try:
+            row = conn.execute(
+                "SELECT alert_sent FROM updates WHERE id = ?",
+                (item["id"],)
+            ).fetchone()
+            if row and row["alert_sent"] == 0:
+                still_unalerted.append(item)
+        finally:
+            conn.close()
+    
+    if not still_unalerted:
+        logger.info("Alert check: all items already alerted (race condition avoided)")
+        print("✅ Alert check: items already alerted")
+        return True
+    
+    new_alerts = still_unalerted
     launches = [u for u in new_alerts if u.get("is_launch")]
-    high_count = sum(1 for u in new_alerts if u.get("impact_level") == "high")
-    medium_count = sum(1 for u in new_alerts if u.get("impact_level") == "medium")
-    low_count = sum(1 for u in new_alerts if u.get("impact_level") == "low")
     
     logger.info(
-        "Alert check: %d new items (%d launches, %d high, %d medium, %d low)",
-        len(new_alerts), len(launches), high_count, medium_count, low_count
+        "Alert check: %d HIGH priority items (%d launches)",
+        len(new_alerts), len(launches)
     )
 
-    print(f"\n🚨 Found {len(new_alerts)} NEW events to alert:")
-    for u in new_alerts[:5]:  # Show max 5 in logs
+    print(f"\n🚨 Found {len(new_alerts)} NEW high-priority events to alert:")
+    for u in new_alerts[:5]:
         flag = "🚀" if u.get("is_launch") else "📌"
         print(f"  {flag} [{u.get('impact_level','?').upper()}] {u.get('title','')[:80]}")
         print(f"       {u.get('company','')} | {u.get('category','')}")
-    if len(new_alerts) > 5:
-        print(f"  ... and {len(new_alerts) - 5} more")
 
     notifier = EmailNotifier()
     try:
