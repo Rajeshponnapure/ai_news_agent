@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 # product announcements. No opinion sites, no paywalls.
 RSS_FEEDS = {
     # ── Official AI Company Blogs ──
-    "OpenAI Blog":          "https://openai.com/news/",
-    "Anthropic News":       "https://www.anthropic.com/news/",  # Working RSS
+    "OpenAI Blog":          "https://openai.com/news/rss.xml",
+    # Anthropic: No working public RSS feed - using blog scraper instead
     "Google AI Blog":       "https://blog.google/technology/ai/rss/",
     "Google DeepMind":      "https://deepmind.google/blog/rss.xml",
     "Microsoft AI Blog":    "https://blogs.microsoft.com/ai/feed/",

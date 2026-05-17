@@ -16,14 +16,14 @@ logger = logging.getLogger(__name__)
 # ── Official company blogs — ONLY major AI companies ───────────────────────
 BLOG_PAGES = {
     # Core AI Labs
-    "OpenAI":           "https://openai.com/news",  # Updated URL
+    # OpenAI: Blocks bot scraping (403) - using RSS feed instead
     "Anthropic":        "https://www.anthropic.com/news",
     "Google DeepMind":  "https://deepmind.google/blog/",
     "Google AI":        "https://blog.google/technology/ai/",
     "Meta AI":          "https://ai.meta.com/blog/",
     "Mistral AI":       "https://mistral.ai/news",
     "Cohere":           "https://cohere.com/blog",
-    # Note: OpenAI, xAI, Perplexity block bot scraping (403 errors)
+    # Note: xAI, Perplexity block bot scraping (403 errors)
 
     # Big Tech AI
     "Microsoft AI":     "https://www.microsoft.com/en-us/ai/blog/",
@@ -149,8 +149,9 @@ class BlogIngestor:
         t = title.lower()
         has_ai = any(k in t for k in AI_MUST_HAVE)
         has_launch = any(k in t for k in LAUNCH_KEYWORDS)
-        # Must have at least AI AND (launch OR minimum length for company blogs)
-        return has_ai and (has_launch or len(t) > 20)
+        # Must have at least AI keywords - launch keywords optional but preferred
+        # Relaxed filter to catch more relevant posts
+        return has_ai
 
     def _extract_articles(self, company: str, html: str, base_url: str) -> list[dict]:
         if not html:
