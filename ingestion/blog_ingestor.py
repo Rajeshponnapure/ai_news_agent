@@ -23,6 +23,7 @@ BLOG_PAGES = {
     "Meta AI":          "https://ai.meta.com/blog/",
     "Mistral AI":       "https://mistral.ai/news",
     "Cohere":           "https://cohere.com/blog",
+    "OpenAI":           "https://openai.com/index/",
     # Note: xAI, Perplexity block bot scraping (403 errors)
 
     # Big Tech AI
@@ -31,19 +32,28 @@ BLOG_PAGES = {
     "Amazon AWS AI":    "https://aws.amazon.com/blogs/machine-learning/",
     "Nvidia":           "https://blogs.nvidia.com/blog/category/generative-ai/",
     "Apple ML":         "https://machinelearning.apple.com/",
+    "Amazon Science":   "https://www.amazon.science/",
 
     # AI Platforms
     "Hugging Face":     "https://huggingface.co/blog",
     "LangChain":        "https://blog.langchain.dev/",
     "Ollama":           "https://ollama.com/blog",
     "vLLM":             "https://vllm.ai/blog/",
+    "LlamaIndex":      "https://www.llamaindex.ai/blog/",
+    "Perplexity":      "https://www.perplexity.ai/blog",
+    "xAI":             "https://x.ai/blog",
+    "Stability AI":    "https://stability.ai/news",
+    "Meta AI Research": "https://ai.meta.com/research/",
 
     # Finance AI
     "Databricks":       "https://www.databricks.com/blog",
+    "Snowflake AI":    "https://www.snowflake.com/en/blog/tag/artificial-intelligence/",
+    "NVIDIA Blog":     "https://blogs.nvidia.com/blog/",
 
     # Marketing AI
     "HubSpot AI":       "https://blog.hubspot.com/marketing/ai-marketing",
     "Salesforce AI":    "https://www.salesforce.com/blog/tag/artificial-intelligence/",
+    "Adobe AI":        "https://blog.adobe.com/en/topics/artificial-intelligence",
 }
 
 # High-signal launch/event keywords — must appear for the article to matter

@@ -26,8 +26,9 @@ RSS_FEEDS = {
     "Nvidia Blog":          "https://blogs.nvidia.com/feed/",
     "GitHub Blog":          "https://github.blog/feed/",
     "Hugging Face Blog":    "https://huggingface.co/blog/feed.xml",
-    "LangChain Blog":       "https://blog.langchain.com/rss.xml",
+    "LangChain Blog":       "https://www.langchain.com/blog/rss.xml",
     "Cohere Blog":          "https://cohere.com/blog/rss.xml",
+    "Amazon Science":      "https://www.amazon.science/rss",
     # Note: Meta AI, Mistral, Stability AI, xAI, Perplexity don't have working public RSS feeds
 
     # ── Tier-1 Tech News (AI-specific) ──
@@ -41,6 +42,10 @@ RSS_FEEDS = {
     "AI Business":          "https://aibusiness.com/rss.xml",
     "Unite.AI":             "https://www.unite.ai/feed/",
     "Analytics India Mag":  "https://analyticsindiamag.com/feed/",
+    "The Verge AI":         "https://www.theverge.com/artificial-intelligence/rss/index.xml",
+    "ZDNet AI":             "https://www.zdnet.com/topic/artificial-intelligence/rss.xml",
+    "Wired AI":             "https://www.wired.com/feed/tag/ai/latest/rss",
+    "CNET AI":              "https://www.cnet.com/rss/news/ai/",
     # Note: AI Trends RSS times out frequently - disabled
     # "AI Trends":            "https://www.aitrends.com/feed/",
     "MarkTechPost AI":      "https://www.marktechpost.com/category/artificial-intelligence/feed/",
@@ -50,6 +55,9 @@ RSS_FEEDS = {
     "CNBC Technology":      "https://www.cnbc.com/id/19854910/device/rss/rss.html",
     "Forbes Tech":          "https://www.forbes.com/technology/feed/",
     "Marketing AI Inst.":   "https://www.marketingaiinstitute.com/blog/rss.xml",
+    "Product Hunt AI":      "https://www.producthunt.com/topics/artificial-intelligence.rss",
+    "TechCrunch AI Startups": "https://techcrunch.com/category/artificial-intelligence/feed/",
+    "VentureBeat AI":       "https://venturebeat.com/category/ai/feed/",
 
     # ── Research & Papers (limited to avoid flooding) ──
     "Papers With Code":     "https://paperswithcode.com/rss",

@@ -28,6 +28,10 @@ SEARCH_QUERIES = [
     '("AI finance" OR "AI trading" OR "fintech" OR "AI banking") AND (launch OR announce OR deploy OR raise OR funding)',
     # 6. Fast-moving AI platforms and consumer products
     '(Ollama OR Perplexity OR "Hugging Face" OR LangChain OR "open source AI" OR "AI platform") AND (launch OR release OR update OR announce)',
+    # 7. Chips, infrastructure and cloud AI platforms
+    '(Nvidia OR AMD OR Intel OR AWS OR Azure OR "Google Cloud" OR Datacenter OR GPU) AND (AI OR model OR inference OR training)',
+    # 8. Open-source and developer ecosystems
+    '("open source" OR "developer tools" OR SDK OR API OR framework) AND (AI OR LLM OR agent OR chatbot)',
 ]
 
 # Only include articles about these companies for top-priority alerting

@@ -58,6 +58,10 @@ class Database:
         conn.execute("PRAGMA journal_mode=WAL")
         return conn
 
+    def _normalize_text(self, text: str) -> str:
+        text = (text or "").lower().strip()
+        return " ".join(text.split())
+
     def _get_existing_columns(self) -> set:
         """Return column names currently in the updates table."""
         conn = self._get_conn()
@@ -259,6 +263,9 @@ class Database:
     def title_exists(self, title: str, company: str, hours: int = 48, source_name: str = "") -> bool:
         conn = self._get_conn()
         try:
+            normalized_title = self._normalize_text(title)
+            normalized_company = self._normalize_text(company)
+
             # Permanent exact-match first (prevents blog re-insertion)
             row = conn.execute(
                 "SELECT 1 FROM updates WHERE title = ? AND company = ? LIMIT 1",
@@ -266,11 +273,38 @@ class Database:
             ).fetchone()
             if row is not None:
                 return True
+
+            # Match on normalized text to catch small formatting changes
+            row = conn.execute(
+                """
+                SELECT 1 FROM updates
+                WHERE lower(trim(title)) = ?
+                  AND lower(trim(company)) = ?
+                LIMIT 1
+                """,
+                (normalized_title, normalized_company),
+            ).fetchone()
+            if row is not None:
+                return True
+
             # Time-window near-duplicate check
             cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
             row = conn.execute(
                 "SELECT 1 FROM updates WHERE title = ? AND company = ? AND timestamp >= ? LIMIT 1",
                 (title, company, cutoff),
+            ).fetchone()
+            return row is not None
+        finally:
+            conn.close()
+
+    def source_url_exists(self, source_url: str) -> bool:
+        if not source_url:
+            return False
+        conn = self._get_conn()
+        try:
+            row = conn.execute(
+                "SELECT 1 FROM updates WHERE source_url = ? LIMIT 1",
+                (source_url,),
             ).fetchone()
             return row is not None
         finally:

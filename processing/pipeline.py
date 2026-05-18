@@ -176,9 +176,11 @@ class ProcessingPipeline:
         seen = set()
         unique = []
         for entry in entries:
+            source_url = (entry.get("source_url") or "").strip().lower()
             key = (
                 self._normalize(entry["title"]),
                 entry["company"].lower().strip(),
+                source_url,
             )
             if key in seen:
                 continue
@@ -222,6 +224,9 @@ class ProcessingPipeline:
                 continue
 
             # Skip if already in DB
+            if db.source_url_exists(entry.get("source_url", "")):
+                continue
+
             if db.title_exists(title, company, source_name=entry.get("source_name", "")):
                 continue
 
