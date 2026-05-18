@@ -26,13 +26,15 @@ SEARCH_QUERIES = [
     '("AI marketing" OR "generative AI" OR "AI tools") AND (marketing OR advertising OR content)',
     # 5. Finance AI — user's domain
     '("AI finance" OR "AI trading" OR "fintech" OR "AI banking") AND (launch OR announce OR deploy OR raise OR funding)',
+    # 6. Fast-moving AI platforms and consumer products
+    '(Ollama OR Perplexity OR "Hugging Face" OR LangChain OR "open source AI" OR "AI platform") AND (launch OR release OR update OR announce)',
 ]
 
 # Only include articles about these companies for top-priority alerting
 TOP_COMPANY_PATTERNS = [
     "openai", "anthropic", "google deepmind", "deepmind", "meta ai",
     "microsoft", "amazon", "aws", "nvidia", "apple", "github",
-    "mistral", "cohere", "perplexity", "xai", "grok", "elon musk",
+    "mistral", "cohere", "perplexity", "xai", "grok", "ollama", "elon musk",
     "stability ai", "hugging face", "langchain", "gemini", "google gemini",
 ]
 

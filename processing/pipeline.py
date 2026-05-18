@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 TOP_COMPANIES = {
     "openai", "anthropic", "google", "deepmind", "google deepmind",
     "microsoft", "amazon", "aws", "meta", "nvidia", "apple", "github",
-    "mistral", "cohere", "perplexity", "xai", "grok", "elon musk", "stability",
+    "mistral", "cohere", "perplexity", "xai", "grok", "ollama", "elon musk", "stability",
     "hugging face", "langchain", "gemini", "google gemini",
 }
 
@@ -203,7 +203,11 @@ class ProcessingPipeline:
         return filtered
 
     def ingest_and_store(self, raw_entries: list[dict]) -> int:
-        """Process raw entries from ingestors and store in DB. Returns count of new entries."""
+        """Process raw entries from ingestors and store in DB.
+
+        Keep all relevant AI items so the digest can email every unique story
+        that has not already been sent.
+        """
         db = get_db()
         count = 0
 
@@ -225,10 +229,6 @@ class ProcessingPipeline:
             is_top_co = bool(entry.get("is_top_company", False))
 
             impact = self.assign_impact(title, summary, is_launch, is_top_co, company)
-
-            # For daily digest, skip truly low-signal content
-            if impact == "low" and not is_top_co and not is_launch:
-                continue
 
             category = assign_category(title, summary, company)
 
@@ -279,7 +279,7 @@ class ProcessingPipeline:
         return entries
 
     def get_top_updates(self, limit: int = 50) -> list[dict]:
-        """Get top updates for the daily digest."""
+        """Get unsent updates for the daily digest, ordered by priority."""
         db = get_db()
         entries = db.get_top_updates(limit=limit)
 
@@ -292,4 +292,4 @@ class ProcessingPipeline:
             if not e.get("category"):
                 e["category"] = assign_category(e["title"], e["summary"], e.get("company", ""))
 
-        return [e for e in entries if e["impact_level"] in ("high", "medium")]
+        return entries

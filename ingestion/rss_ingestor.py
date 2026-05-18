@@ -62,7 +62,7 @@ RSS_FEEDS = {
 TOP_COMPANIES = {
     "openai", "anthropic", "google", "deepmind", "microsoft", "amazon",
     "aws", "meta", "nvidia", "apple", "github", "mistral", "cohere",
-    "perplexity", "xai", "grok", "elon musk", "stability", "hugging face", "langchain",
+    "perplexity", "xai", "grok", "ollama", "elon musk", "stability", "hugging face", "langchain",
     "gemini", "claude", "chatgpt", "copilot", "bedrock", "sagemaker",
 }
 

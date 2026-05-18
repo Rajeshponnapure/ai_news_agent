@@ -146,13 +146,13 @@ def run_digest() -> bool:
     from notifier.email_notifier import EmailNotifier
 
     pipeline = ProcessingPipeline()
-    updates = pipeline.get_top_updates(limit=80)
+    updates = pipeline.get_top_updates()
 
     if not updates:
         logger.warning("No updates for digest — running emergency ingestion")
         count = asyncio.run(run_ingestion())
         logger.info("Emergency ingestion: %d entries", count)
-        updates = pipeline.get_top_updates(limit=80)
+        updates = pipeline.get_top_updates()
 
     if not updates:
         logger.error("Still no updates after emergency ingestion")
@@ -205,12 +205,9 @@ def main():
         print("=== INGEST + ALERT CHECK ===")
         count = asyncio.run(run_ingestion())
         print(f"\n✅ Ingested {count} new entries")
-        if count > 0:
-            # Only check alerts if we actually got new entries
-            success = run_alert_check()
-        else:
-            print("ℹ️  No new entries — skipping alert check")
-            success = True
+        # Always run the alert check so previously ingested but unsent items
+        # are not skipped just because this cycle deduped to zero new rows.
+        success = run_alert_check()
         sys.exit(0 if success else 1)
 
     elif command == "digest":

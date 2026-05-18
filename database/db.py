@@ -157,40 +157,47 @@ class Database:
             conn.close()
 
     def get_last_24h(self) -> list[dict]:
-        cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+        """Get all unsent updates ordered by priority.
+
+        The method name is historical, but digest delivery should be driven by
+        sent-state so a missed run does not permanently skip unique news.
+        """
         conn = self._get_conn()
         try:
             rows = conn.execute(
                 """
                 SELECT * FROM updates
-                WHERE timestamp >= ? AND digest_sent = 0
+                WHERE digest_sent = 0
                 ORDER BY
                     CASE impact_level WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END,
                     is_launch DESC,
                     timestamp DESC
                 """,
-                (cutoff,),
             ).fetchall()
             return [dict(r) for r in rows]
         finally:
             conn.close()
 
-    def get_top_updates(self, limit: int = 50) -> list[dict]:
-        cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+    def get_top_updates(self, limit: int | None = None) -> list[dict]:
+        """Get unsent updates for the daily digest."""
         conn = self._get_conn()
         try:
-            rows = conn.execute(
-                """
+            query = """
                 SELECT * FROM updates
-                WHERE timestamp >= ? AND digest_sent = 0
+                WHERE digest_sent = 0
                 ORDER BY
                     CASE impact_level WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END,
                     is_launch DESC,
                     is_top_company DESC,
                     timestamp DESC
-                LIMIT ?
-                """,
-                (cutoff, limit),
+            """
+            params: tuple = ()
+            if limit is not None:
+                query += "\n                LIMIT ?"
+                params = (limit,)
+            rows = conn.execute(
+                query,
+                params,
             ).fetchall()
             return [dict(r) for r in rows]
         finally:

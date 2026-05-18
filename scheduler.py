@@ -82,7 +82,7 @@ class AgentScheduler:
 
         # Get top updates
         try:
-            updates = self.pipeline.get_top_updates(limit=50)
+            updates = self.pipeline.get_top_updates()
             logger.info("Compiled %d top updates for digest", len(updates))
         except Exception as e:
             logger.error("Pipeline processing failed: %s", e, exc_info=True)
