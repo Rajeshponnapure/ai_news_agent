@@ -319,6 +319,30 @@ class Database:
         finally:
             conn.close()
 
+    def get_alert_stats(self) -> dict:
+        """Get statistics on alert sending for debugging."""
+        conn = self._get_conn()
+        try:
+            total = conn.execute("SELECT COUNT(*) as c FROM updates").fetchone()["c"]
+            unalerted = conn.execute(
+                "SELECT COUNT(*) as c FROM updates WHERE alert_sent = 0"
+            ).fetchone()["c"]
+            high_med = conn.execute(
+                "SELECT COUNT(*) as c FROM updates WHERE impact_level IN ('high', 'medium')"
+            ).fetchone()["c"]
+            high_med_unalerted = conn.execute(
+                "SELECT COUNT(*) as c FROM updates WHERE alert_sent = 0 AND impact_level IN ('high', 'medium')"
+            ).fetchone()["c"]
+
+            return {
+                "total_entries": total,
+                "unalerted_entries": unalerted,
+                "high_medium_entries": high_med,
+                "high_medium_unalerted": high_med_unalerted,
+            }
+        finally:
+            conn.close()
+
     def get_unprocessed_voice_updates(self) -> list[dict]:
         """Get high/medium updates from target companies that need audio generated."""
         # This will be called by the generation worker

@@ -102,6 +102,22 @@ CATEGORIES = {
         "safety", "alignment", "breakthrough", "sota", "frontier",
         "academic", "lab", "university",
     ],
+    "🏥 MEDICAL & HEALTHCARE AI": [
+        "healthcare", "medical", "clinical", "diagnosis", "drug", "biotech",
+        "radiology", "pathology", "surgical", "therapeutic", "genomics",
+        "patient", "hospital", "fda", "trial", "pharma", "medicine",
+    ],
+    "🤖 ROBOTICS & AUTOMATION": [
+        "robot", "robotics", "humanoid", "drone", "autonomous",
+        "boston dynamics", "spot", "atlas", "manipulator", "cobot",
+        "industrial robot", "automation", "sensor", "actuator",
+    ],
+    "⚠️ AI SAFETY & ETHICS": [
+        "safety", "alignment", "bias", "hallucination", "malfunction",
+        "jailbreak", "red team", "adversarial", "robustness", "guardrail",
+        "regulation", "governance", "ethics", "responsible", "transparency",
+        "misuse", "incident", "failure", "recall", "vulnerability",
+    ],
 }
 
 CATEGORY_ORDER = [
@@ -110,6 +126,9 @@ CATEGORY_ORDER = [
     "📣 MARKETING & GROWTH AI",
     "💻 AI CODING & DEVELOPER TOOLS",
     "⚡ HARDWARE & INFRASTRUCTURE",
+    "🏥 MEDICAL & HEALTHCARE AI",
+    "🤖 ROBOTICS & AUTOMATION",
+    "⚠️ AI SAFETY & ETHICS",
     "🔬 RESEARCH & SCIENCE",
     "📰 OTHER AI NEWS",
 ]
@@ -154,15 +173,21 @@ class ProcessingPipeline:
             if kw in text:
                 return "high"
 
-        # Check if from known top company
-        company_in_text = any(co in text for co in TOP_COMPANIES)
-        if company_in_text and is_launch:
-            return "high"
-
         # Medium impact keywords
         for kw in MEDIUM_IMPACT_KEYWORDS:
             if kw in text:
                 return "medium"
+
+        # IMPROVED: Default to MEDIUM if from top company (more inclusive)
+        # This ensures top company news gets prioritized even without launch keywords
+        company_in_text = any(co in text for co in TOP_COMPANIES)
+        if is_top_company or company_in_text:
+            return "medium"
+
+        # IMPROVED: If marked as launch by ingestor, make it MEDIUM
+        # Trust ingestion logic which already filters for AI relevance
+        if is_launch:
+            return "medium"
 
         return "low"
 
@@ -252,6 +277,23 @@ class ProcessingPipeline:
             count += 1
 
         logger.info("Stored %d new entries (from %d raw, %d deduped)", count, len(raw_entries), len(deduped))
+
+        if count > 0:
+            sample_entries = deduped[:3]
+            for e in sample_entries:
+                ts = e.get("timestamp", "N/A")
+                try:
+                    ts_dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+                    age_hours = (datetime.now(timezone.utc) - ts_dt).total_seconds() / 3600
+                    logger.debug(
+                        "  Source: %s | Age: %.1f hrs | TS: %s",
+                        e.get("source_name", "?"),
+                        age_hours,
+                        ts,
+                    )
+                except Exception:
+                    logger.debug("  Source: %s | TS: %s", e.get("source_name", "?"), ts)
+
         return count
 
     def process(self) -> list[dict]:

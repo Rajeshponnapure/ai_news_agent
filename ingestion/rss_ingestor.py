@@ -28,7 +28,7 @@ RSS_FEEDS = {
     "Hugging Face Blog":    "https://huggingface.co/blog/feed.xml",
     "LangChain Blog":       "https://www.langchain.com/blog/rss.xml",
     "Cohere Blog":          "https://cohere.com/blog/rss.xml",
-    "Amazon Science":      "https://www.amazon.science/rss",
+    "Amazon Science":      "https://www.amazon.science/index.rss",
     # Note: Meta AI, Mistral, Stability AI, xAI, Perplexity don't have working public RSS feeds
 
     # ── Tier-1 Tech News (AI-specific) ──
@@ -36,34 +36,74 @@ RSS_FEEDS = {
     "VentureBeat AI":       "https://venturebeat.com/category/ai/feed/",
     "Ars Technica AI":      "https://arstechnica.com/tag/ai/feed/",
     "MIT Tech Review AI":   "https://www.technologyreview.com/topic/artificial-intelligence/feed",
-    "ZDNet AI":             "https://www.zdnet.com/news/rss.xml",
+    "ZDNet AI":             "https://www.zdnet.com/topic/artificial-intelligence/rss.xml",
 
     # ── Additional High-Signal AI News ──
     "AI Business":          "https://aibusiness.com/rss.xml",
     "Unite.AI":             "https://www.unite.ai/feed/",
     "Analytics India Mag":  "https://analyticsindiamag.com/feed/",
-    "The Verge AI":         "https://www.theverge.com/artificial-intelligence/rss/index.xml",
-    "ZDNet AI":             "https://www.zdnet.com/topic/artificial-intelligence/rss.xml",
+    "The Verge AI":         "https://www.theverge.com/rss/index.xml",
     "Wired AI":             "https://www.wired.com/feed/tag/ai/latest/rss",
-    "CNET AI":              "https://www.cnet.com/rss/news/ai/",
+    "CNET AI":              "https://www.cnet.com/rss/news/",
     # Note: AI Trends RSS times out frequently - disabled
     # "AI Trends":            "https://www.aitrends.com/feed/",
     "MarkTechPost AI":      "https://www.marktechpost.com/category/artificial-intelligence/feed/",
-    "VentureBeat AI":       "https://venturebeat.com/category/ai/feed/",
 
     # ── AI in Finance & Marketing ──
     "CNBC Technology":      "https://www.cnbc.com/id/19854910/device/rss/rss.html",
     "Forbes Tech":          "https://www.forbes.com/technology/feed/",
     "Marketing AI Inst.":   "https://www.marketingaiinstitute.com/blog/rss.xml",
-    "Product Hunt AI":      "https://www.producthunt.com/topics/artificial-intelligence.rss",
-    "TechCrunch AI Startups": "https://techcrunch.com/category/artificial-intelligence/feed/",
-    "VentureBeat AI":       "https://venturebeat.com/category/ai/feed/",
+    "Product Hunt AI":      "https://www.producthunt.com/feed",
+    "Bloomberg AI":         "https://www.bloomberg.com/topics/artificial-intelligence",
 
     # ── Research & Papers (limited to avoid flooding) ──
     "Papers With Code":     "https://paperswithcode.com/rss",
     # Note: arXiv feeds temporarily disabled - too many papers flood alerts
     # "arXiv AI":             "http://export.arxiv.org/rss/cs.AI",
     # "arXiv ML":             "http://export.arxiv.org/rss/cs.LG",
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # 🏥 MEDICAL & HEALTHCARE AI
+    # ═══════════════════════════════════════════════════════════════════════
+    "STAT Health AI":       "https://www.statnews.com/tag/artificial-intelligence/feed/",
+    "MedPage Today AI":     "https://www.medpagetoday.com/rss/artificial-intelligence.xml",
+    "AI in Healthcare":     "https://www.aiin.healthcare/feed",
+    "Healthcare IT News":   "https://www.healthcareitnews.com/taxonomy/term/10766/feed",
+    "Nature AI":            "https://www.nature.com/subjects/artificial-intelligence.rss",
+    "Science Daily AI":     "https://www.sciencedaily.com/rss/computers_math/artificial_intelligence.xml",
+    "NIH News AI":          "https://www.nih.gov/news-events/news-releases/feed/artificial-intelligence",
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # 🤖 ROBOTICS
+    # ═══════════════════════════════════════════════════════════════════════
+    "IEEE Spectrum Robotics":  "https://spectrum.ieee.org/topic/robotics/feed/",
+    "Robotics Business Review": "https://www.roboticsbusinessreview.com/feed/",
+    "The Robot Report":        "https://www.therobotreport.com/feed/",
+    "Robotics 24/7":           "https://www.robotics247.com/rss/",
+    "TechCrunch Robotics":     "https://techcrunch.com/category/robotics/feed/",
+    "MIT Robotics News":       "https://news.mit.edu/topic/robotics-rss.xml",
+    "Google Research Robotics":"https://research.google/blog/category/robotics/feed/",
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # ⚠️  AI SAFETY, MISUSE & MALFUNCTIONS
+    # ═══════════════════════════════════════════════════════════════════════
+    "AI Safety Institute":     "https://www.aisi.gov.uk/news/feed.xml",
+    "Promise & Peril":        "https://www.facebook.com/plugins/feed.php?%7B%22ai-safety%22%7D",
+    "AI Incident News":       "https://incidentdatabase.ai/feed/",
+    "Future of Life AI":      "https://futureoflife.org/category/ai/feed/",
+    "Center for AI Safety":   "https://www.safe.ai/blog/rss.xml",
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # 🌍 GENERAL TECH & GLOBAL AI NEWS
+    # ═══════════════════════════════════════════════════════════════════════
+    "Reuters AI":             "https://www.reuters.com/technology/artificial-intelligence/rss",
+    "BBC AI":                 "https://www.bbc.com/news/topics/ce1qrvlewydd/rss",
+    "The Guardian AI":        "https://www.theguardian.com/technology/artificialintelligence/rss",
+    "NYT AI":                 "https://rss.nytimes.com/services/xml/rss/nyt/ArtificialIntelligence.xml",
+    "WSJ AI":                 "https://feeds.a.dj.com/rss/RSSWSJD.xml",
+    "Vox AI":                 "https://www.vox.com/ai/rss",
+    "Engadget AI":            "https://www.engadget.com/tag/ai/rss.xml",
+    "VentureBeat AI":         "https://venturebeat.com/category/ai/feed/",
 }
 
 # Companies whose launches should ALWAYS be included (never filtered out)
@@ -88,6 +128,14 @@ LAUNCH_KEYWORDS = [
     "partnership", "acqui", "funding", "raises",  # business events
     "open source", "open-source", "weights released",  # OS releases
     "api", "sdk", "new endpoint", "deprecat",
+    # Medical
+    "fda approval", "clinical trial", "breakthrough therapy",
+    "drug discovery", "diagnosis", "biotech",
+    # Robotics
+    "humanoid", "boston dynamics", "autonomous vehicle",
+    # Safety/Incidents
+    "recall", "vulnerability", "incident", "failure", "malfunction",
+    "bias", "hallucination", "jailbreak",
 ]
 
 # Domain filter — these are core AI-relevant domains
@@ -109,6 +157,17 @@ DOMAIN_KEYWORDS = [
     "ai startup", "ai company", "ai chip", "gpu", "tpu",
     "ai marketing", "ai finance", "ai trading", "fintech ai",
     "ai automation", "ai productivity", "enterprise ai",
+    # Medical AI
+    "healthcare ai", "medical ai", "ai drug", "clinical ai",
+    "ai diagnosis", "ai radiology", "ai biotech", "ai health",
+    "ai medicine", "ai surgery", "ai hospital",
+    # Robotics
+    "robot", "robotics", "humanoid", "drone", "autonomous vehicle",
+    "self-driving", "boston dynamics", "spot", "atlas", "ai robot",
+    # AI Safety & Incidents
+    "ai safety", "ai alignment", "ai bias", "ai hallucination",
+    "ai malfunction", "ai incident", "ai regulation", "ai governance",
+    "red team", "jailbreak", "ai risk", "ai ethics",
 ]
 
 

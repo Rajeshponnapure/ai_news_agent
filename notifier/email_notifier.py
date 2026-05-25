@@ -28,6 +28,9 @@ CATEGORY_COLORS = {
     "📣 MARKETING & GROWTH AI":     "#8e44ad",
     "💻 AI CODING & DEVELOPER TOOLS": "#27ae60",
     "⚡ HARDWARE & INFRASTRUCTURE": "#e67e22",
+    "🏥 MEDICAL & HEALTHCARE AI":  "#1abc9c",
+    "🤖 ROBOTICS & AUTOMATION":    "#e67e22",
+    "⚠️ AI SAFETY & ETHICS":       "#e74c3c",
     "🔬 RESEARCH & SCIENCE":        "#16a085",
     "📰 OTHER AI NEWS":             "#7f8c8d",
 }
@@ -44,6 +47,9 @@ CATEGORY_ORDER = [
     "📣 MARKETING & GROWTH AI",
     "💻 AI CODING & DEVELOPER TOOLS",
     "⚡ HARDWARE & INFRASTRUCTURE",
+    "🏥 MEDICAL & HEALTHCARE AI",
+    "🤖 ROBOTICS & AUTOMATION",
+    "⚠️ AI SAFETY & ETHICS",
     "🔬 RESEARCH & SCIENCE",
     "📰 OTHER AI NEWS",
 ]

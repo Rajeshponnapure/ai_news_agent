@@ -23,14 +23,13 @@ BLOG_PAGES = {
     "Meta AI":          "https://ai.meta.com/blog/",
     "Mistral AI":       "https://mistral.ai/news",
     "Cohere":           "https://cohere.com/blog",
-    "OpenAI":           "https://openai.com/index/",
-    # Note: xAI, Perplexity block bot scraping (403 errors)
+    # OpenAI blocks bot scraping from this ingestor UA; covered via RSS/NewsAPI/GitHub instead.
 
     # Big Tech AI
     "Microsoft AI":     "https://www.microsoft.com/en-us/ai/blog/",
     "GitHub":           "https://github.blog/",
     "Amazon AWS AI":    "https://aws.amazon.com/blogs/machine-learning/",
-    "Nvidia":           "https://blogs.nvidia.com/blog/category/generative-ai/",
+    "Nvidia":           "https://blogs.nvidia.com/",
     "Apple ML":         "https://machinelearning.apple.com/",
     "Amazon Science":   "https://www.amazon.science/",
 
@@ -40,20 +39,67 @@ BLOG_PAGES = {
     "Ollama":           "https://ollama.com/blog",
     "vLLM":             "https://vllm.ai/blog/",
     "LlamaIndex":      "https://www.llamaindex.ai/blog/",
-    "Perplexity":      "https://www.perplexity.ai/blog",
-    "xAI":             "https://x.ai/blog",
-    "Stability AI":    "https://stability.ai/news",
+    # Perplexity and xAI currently return 403 for this scraper UA; covered via other ingestors.
+    "Stability AI":    "https://stability.ai/news-updates",
     "Meta AI Research": "https://ai.meta.com/research/",
 
     # Finance AI
     "Databricks":       "https://www.databricks.com/blog",
-    "Snowflake AI":    "https://www.snowflake.com/en/blog/tag/artificial-intelligence/",
-    "NVIDIA Blog":     "https://blogs.nvidia.com/blog/",
+    "Snowflake AI":    "https://www.snowflake.com/en/blog/",
+    "NVIDIA Blog":     "https://blogs.nvidia.com/",
 
     # Marketing AI
     "HubSpot AI":       "https://blog.hubspot.com/marketing/ai-marketing",
     "Salesforce AI":    "https://www.salesforce.com/blog/tag/artificial-intelligence/",
     "Adobe AI":        "https://blog.adobe.com/en/topics/artificial-intelligence",
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # 🏥 MEDICAL & HEALTHCARE AI
+    # ═══════════════════════════════════════════════════════════════════════
+    "Google Health AI":  "https://health.google/",
+    "NIH Research News": "https://www.nih.gov/news-events/news-releases",
+    "WEF AI":           "https://www.weforum.org/topics/artificial-intelligence/",
+    "Stanford AIMI":    "https://aimi.stanford.edu/news",
+    "Nature AI":        "https://www.nature.com/natmachintell/",
+    # Note: Nature Machine Intelligence articles listed in RESEARCH section below
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # 🤖 ROBOTICS
+    # ═══════════════════════════════════════════════════════════════════════
+    "Boston Dynamics":  "https://www.bostondynamics.com/blog",
+    "NVIDIA Robotics":  "https://developer.nvidia.com/blog/tag/robotics/",
+    "Google AI Blog":   "https://ai.googleblog.com/",
+    "IEEE Spectrum Robotics": "https://spectrum.ieee.org/topic/robotics/",
+    "Robotics 24/7":    "https://www.robotics247.com/",
+    "TechCrunch Robotics": "https://techcrunch.com/category/robotics/",
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # ⚠️  AI SAFETY, MISUSE & MALFUNCTIONS
+    # ═══════════════════════════════════════════════════════════════════════
+    "AI Safety Institute": "https://www.aisi.gov.uk/",
+    "Center for AI Safety": "https://www.safe.ai/blog",
+    "AI Incident Database": "https://incidentdatabase.ai/blog/",
+    "Future of Life Institute": "https://futureoflife.org/category/ai/",
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # 🌍 GENERAL TECH & AI NEWS
+    # ═══════════════════════════════════════════════════════════════════════
+    "Wired AI":         "https://www.wired.com/tag/artificial-intelligence/",
+    "The Verge AI":     "https://www.theverge.com/ai-artificial-intelligence",
+    "Engadget AI":      "https://www.engadget.com/tag/ai/",
+    "NYT AI":           "https://www.nytimes.com/topic/subject/artificial-intelligence",
+    "BBC Tech":         "https://www.bbc.co.uk/news/technology",
+    "Vox Tech":         "https://www.vox.com/technology",
+    "VentureBeat AI":   "https://venturebeat.com/category/ai/",
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # 🔬 AI RESEARCH & SCIENCE (beyond core companies)
+    # ═══════════════════════════════════════════════════════════════════════
+    "DeepMind Research": "https://deepmind.google/research/",
+    "Apple ML Research": "https://machinelearning.apple.com/",
+    "Meta Research":     "https://research.facebook.com/publications/",
+    "Google Research":   "https://research.google/blog/",
+    "Nature Machine Intelligence": "https://www.nature.com/natmachintell/articles",
 }
 
 # High-signal launch/event keywords — must appear for the article to matter
@@ -78,6 +124,25 @@ AI_MUST_HAVE = [
     "model", "agent", "llm", "gpt", "claude", "gemini", "llama",
     "copilot", "chatgpt", "neural", "generative", "automation",
     "bedrock", "sagemaker", "deepmind", "openai", "anthropic",
+    # Medical AI
+    "medical", "healthcare", "health", "clinical", "diagnosis", "drug",
+    "biotech", "radiology", "pathology", "surgical", "therapeutic",
+    "genomics", "proteomics", "pharma", "patient", "hospital",
+    # Robotics
+    "robot", "robotics", "drone", "autonomous", "humanoid", "quadruped",
+    "manipulator", "actuator", "sensor fusion", "slam", "navigation",
+    "boston dynamics", "spot", "atlas", "optim us", "telsa bot",
+    "automation", "industrial robot", "cobot", "collaborative robot",
+    # AI Safety & Misuse
+    "safety", "alignment", "misuse", "malfunction", "bias", "hallucination",
+    "red team", "jailbreak", "adversarial", "robustness", "guardrail",
+    "regulation", "governance", "oversight", "policy", "ethics",
+    "responsible", "transparency", "explainability", "audit",
+    # General tech
+    "tech", "technology", "startup", "funding", "innovation",
+    "breakthrough", "discovery", "research", "science", "engineering",
+    "chip", "gpu", "tpu", "processor", "semiconductor",
+    "cuda", "tensor", "inference", "training", "compute",
 ]
 
 

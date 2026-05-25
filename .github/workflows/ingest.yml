@@ -62,7 +62,23 @@ jobs:
           EMAIL_RECIPIENT: ${{ secrets.EMAIL_RECIPIENT }}
           MAX_RETRIES: "3"
           RETRY_DELAY_SECONDS: "5"
-        run: python runner.py ingest-alert
+        continue-on-error: true
+        run: |
+          python runner.py ingest-alert
+
+      # ADDED: Diagnostic check after ingestion to verify database state
+      - name: Verify database state
+        run: |
+          python -c "
+          import sqlite3
+          db = sqlite3.connect('data/ai_updates.db')
+          db.row_factory = sqlite3.Row
+          total = db.execute('SELECT COUNT(*) as c FROM updates').fetchone()['c']
+          high_med = db.execute('SELECT COUNT(*) as c FROM updates WHERE impact_level IN (\"high\",\"medium\")').fetchone()['c']
+          unalerted = db.execute('SELECT COUNT(*) as c FROM updates WHERE alert_sent=0 AND impact_level IN (\"high\",\"medium\")').fetchone()['c']
+          print(f'Database: {total} total | {high_med} high/med | {unalerted} unalerted high/med')
+          db.close()
+          "
 
       # Save database so next run has accumulated data
       - name: Save database cache
