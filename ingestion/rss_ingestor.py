@@ -54,7 +54,6 @@ RSS_FEEDS = {
     "Forbes Tech":          "https://www.forbes.com/technology/feed/",
     "Marketing AI Inst.":   "https://www.marketingaiinstitute.com/blog/rss.xml",
     "Product Hunt AI":      "https://www.producthunt.com/feed",
-    "Bloomberg AI":         "https://www.bloomberg.com/topics/artificial-intelligence",
 
     # ── Research & Papers (limited to avoid flooding) ──
     "Papers With Code":     "https://paperswithcode.com/rss",
@@ -66,44 +65,35 @@ RSS_FEEDS = {
     # 🏥 MEDICAL & HEALTHCARE AI
     # ═══════════════════════════════════════════════════════════════════════
     "STAT Health AI":       "https://www.statnews.com/tag/artificial-intelligence/feed/",
-    "MedPage Today AI":     "https://www.medpagetoday.com/rss/artificial-intelligence.xml",
-    "AI in Healthcare":     "https://www.aiin.healthcare/feed",
-    "Healthcare IT News":   "https://www.healthcareitnews.com/taxonomy/term/10766/feed",
-    "Nature AI":            "https://www.nature.com/subjects/artificial-intelligence.rss",
+    "Nature Machine Intelligence": "https://www.nature.com/natmachintell.rss",
     "Science Daily AI":     "https://www.sciencedaily.com/rss/computers_math/artificial_intelligence.xml",
-    "NIH News AI":          "https://www.nih.gov/news-events/news-releases/feed/artificial-intelligence",
 
     # ═══════════════════════════════════════════════════════════════════════
     # 🤖 ROBOTICS
     # ═══════════════════════════════════════════════════════════════════════
-    "IEEE Spectrum Robotics":  "https://spectrum.ieee.org/topic/robotics/feed/",
+    "IEEE Spectrum":           "https://spectrum.ieee.org/feed/rss/",
     "Robotics Business Review": "https://www.roboticsbusinessreview.com/feed/",
     "The Robot Report":        "https://www.therobotreport.com/feed/",
     "Robotics 24/7":           "https://www.robotics247.com/rss/",
     "TechCrunch Robotics":     "https://techcrunch.com/category/robotics/feed/",
-    "MIT Robotics News":       "https://news.mit.edu/topic/robotics-rss.xml",
-    "Google Research Robotics":"https://research.google/blog/category/robotics/feed/",
+    "Google Research Blog":    "https://research.google/blog/rss/",
 
     # ═══════════════════════════════════════════════════════════════════════
     # ⚠️  AI SAFETY, MISUSE & MALFUNCTIONS
     # ═══════════════════════════════════════════════════════════════════════
-    "AI Safety Institute":     "https://www.aisi.gov.uk/news/feed.xml",
-    "Promise & Peril":        "https://www.facebook.com/plugins/feed.php?%7B%22ai-safety%22%7D",
-    "AI Incident News":       "https://incidentdatabase.ai/feed/",
+    "AI Incident Database":   "https://incidentdatabase.ai/rss.xml",
     "Future of Life AI":      "https://futureoflife.org/category/ai/feed/",
-    "Center for AI Safety":   "https://www.safe.ai/blog/rss.xml",
 
     # ═══════════════════════════════════════════════════════════════════════
     # 🌍 GENERAL TECH & GLOBAL AI NEWS
     # ═══════════════════════════════════════════════════════════════════════
-    "Reuters AI":             "https://www.reuters.com/technology/artificial-intelligence/rss",
-    "BBC AI":                 "https://www.bbc.com/news/topics/ce1qrvlewydd/rss",
-    "The Guardian AI":        "https://www.theguardian.com/technology/artificialintelligence/rss",
-    "NYT AI":                 "https://rss.nytimes.com/services/xml/rss/nyt/ArtificialIntelligence.xml",
+    "BBC Tech":               "https://feeds.bbci.co.uk/news/technology/rss.xml",
+    "The Guardian Tech":      "https://www.theguardian.com/technology/rss",
+    "NYT AI":                 "https://www.nytimes.com/svc/collections/v1/publish/https://www.nytimes.com/topic/subject/artificial-intelligence/rss.xml",
     "WSJ AI":                 "https://feeds.a.dj.com/rss/RSSWSJD.xml",
-    "Vox AI":                 "https://www.vox.com/ai/rss",
-    "Engadget AI":            "https://www.engadget.com/tag/ai/rss.xml",
-    "VentureBeat AI":         "https://venturebeat.com/category/ai/feed/",
+    "Vox":                    "https://www.vox.com/rss/index.xml",
+    "Engadget":               "https://www.engadget.com/rss.xml",
+    "Bloomberg Tech":         "https://feeds.bloomberg.com/technology/news.rss",
 }
 
 # Companies whose launches should ALWAYS be included (never filtered out)

@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 NEWS_API_URL = "https://newsapi.org/v2/everything"
 
 # Focused queries — each targets a specific domain
-# Consolidated to stay well within the 100 req/day free tier
+# Reduced to 8 queries to stay within the 100 req/day free tier
 SEARCH_QUERIES = [
     # 1. Top company launches and model releases
     '(OpenAI OR Anthropic OR "Google DeepMind" OR "Meta AI" OR xAI OR Grok OR Gemini OR Claude OR ChatGPT) AND (launch OR release OR announce OR update OR new)',
@@ -22,24 +22,16 @@ SEARCH_QUERIES = [
     '(Microsoft OR Amazon OR AWS OR Nvidia OR GitHub) AND (AI OR artificial intelligence) AND (launch OR release OR update OR announce)',
     # 3. New AI models, agents and tools
     '("AI model" OR "AI agent" OR "large language model" OR LLM OR chatbot) AND (launch OR release OR new OR announce)',
-    # 4. Marketing AI
-    '("AI marketing" OR "generative AI" OR "AI tools") AND (marketing OR advertising OR content)',
-    # 5. Finance AI
-    '("AI finance" OR "AI trading" OR "fintech" OR "AI banking") AND (launch OR announce OR deploy OR raise OR funding)',
-    # 6. Fast-moving AI platforms and consumer products
+    # 4. Business AI (marketing + finance)
+    '("AI" OR "artificial intelligence") AND (marketing OR advertising OR finance OR trading OR fintech OR banking OR funding) AND (launch OR announce OR deploy OR raise)',
+    # 5. Fast-moving AI platforms and consumer products
     '(Ollama OR Perplexity OR "Hugging Face" OR LangChain OR "open source AI" OR "AI platform") AND (launch OR release OR update OR announce)',
-    # 7. Chips, infrastructure and cloud AI platforms
+    # 6. Chips, infrastructure and cloud AI platforms
     '(Nvidia OR AMD OR Intel OR AWS OR Azure OR "Google Cloud" OR Datacenter OR GPU) AND (AI OR model OR inference OR training)',
-    # 8. Open-source and developer ecosystems
+    # 7. Open-source and developer ecosystems
     '("open source" OR "developer tools" OR SDK OR API OR framework) AND (AI OR LLM OR agent OR chatbot)',
-    # 9. Medical AI & Healthcare
-    '("AI healthcare" OR "medical AI" OR "AI drug discovery" OR "clinical AI" OR "AI diagnosis" OR "AI radiology" OR "AI biotech") AND (launch OR announce OR release OR breakthrough OR FDA)',
-    # 10. Robotics
-    '(robotics OR robot OR humanoid OR drone OR "autonomous vehicle" OR "Boston Dynamics" OR "AI robotics") AND (launch OR new OR announce OR release OR update)',
-    # 11. AI Safety & Misuse
-    '("AI safety" OR "AI alignment" OR "AI bias" OR "AI hallucination" OR "AI malfunction" OR "AI jailbreak" OR "AI regulation") AND (research OR incident OR report OR policy OR study)',
-    # 12. AI Malfunctions & Failures
-    '("AI failure" OR "AI crash" OR "AI error" OR "AI mistake" OR "AI bug" OR "AI shutdown" OR "AI recall" OR "AI flaw")',
+    # 8. AI Domains (medical + robotics + safety)
+    '(robotics OR robot OR humanoid OR "AI healthcare" OR "medical AI" OR "AI safety" OR "AI bias" OR "AI regulation") AND (launch OR new OR announce OR release OR research OR breakthrough OR FDA)',
 ]
 
 # Only include articles about these companies for top-priority alerting

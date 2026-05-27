@@ -23,13 +23,20 @@ BLOG_PAGES = {
     "Meta AI":          "https://ai.meta.com/blog/",
     "Mistral AI":       "https://mistral.ai/news",
     "Cohere":           "https://cohere.com/blog",
-    # OpenAI blocks bot scraping from this ingestor UA; covered via RSS/NewsAPI/GitHub instead.
+    "OpenAI Dev Blog":    "https://developers.openai.com/blog",
+    # OpenAI's main news page blocks bot scraping; covered via RSS/NewsAPI/GitHub instead.
 
     # Big Tech AI
     "Microsoft AI":     "https://www.microsoft.com/en-us/ai/blog/",
+    "Microsoft Security AI": "https://www.microsoft.com/en-us/security/blog/topic/ai-and-machine-learning/",
+    "Microsoft Cloud Blog":  "https://www.microsoft.com/en-us/microsoft-cloud/blog/",
     "GitHub":           "https://github.blog/",
     "Amazon AWS AI":    "https://aws.amazon.com/blogs/machine-learning/",
+    "AWS Cloud Ops AI": "https://aws.amazon.com/blogs/mt/tag/ai-ml/",
+    "AWS News AI":      "https://aws.amazon.com/blogs/aws/category/artificial-intelligence/",
     "Nvidia":           "https://blogs.nvidia.com/",
+    "NVIDIA Newsroom":  "https://nvidianews.nvidia.com/news/latest",
+    "Google Cloud AI":  "https://cloud.google.com/blog/products/ai-machine-learning",
     "Apple ML":         "https://machinelearning.apple.com/",
     "Amazon Science":   "https://www.amazon.science/",
 
@@ -46,7 +53,6 @@ BLOG_PAGES = {
     # Finance AI
     "Databricks":       "https://www.databricks.com/blog",
     "Snowflake AI":    "https://www.snowflake.com/en/blog/",
-    "NVIDIA Blog":     "https://blogs.nvidia.com/",
 
     # Marketing AI
     "HubSpot AI":       "https://blog.hubspot.com/marketing/ai-marketing",
@@ -86,17 +92,21 @@ BLOG_PAGES = {
     # ═══════════════════════════════════════════════════════════════════════
     "Wired AI":         "https://www.wired.com/tag/artificial-intelligence/",
     "The Verge AI":     "https://www.theverge.com/ai-artificial-intelligence",
-    "Engadget AI":      "https://www.engadget.com/tag/ai/",
     "NYT AI":           "https://www.nytimes.com/topic/subject/artificial-intelligence",
     "BBC Tech":         "https://www.bbc.co.uk/news/technology",
     "Vox Tech":         "https://www.vox.com/technology",
     "VentureBeat AI":   "https://venturebeat.com/category/ai/",
+    "InformationWeek":  "https://www.informationweek.com/machine-learning-ai",
+    "MIT News AI":      "https://news.mit.edu/topic/artificial-intelligence2",
+    "MIT News ML":      "https://news.mit.edu/topic/machine-learning",
+    "ScienceDaily AI":  "https://www.sciencedaily.com/news/computers_math/artificial_intelligence/",
+    "TechCrunch GenAI": "https://techcrunch.com/tag/generative-ai/",
 
     # ═══════════════════════════════════════════════════════════════════════
     # 🔬 AI RESEARCH & SCIENCE (beyond core companies)
     # ═══════════════════════════════════════════════════════════════════════
     "DeepMind Research": "https://deepmind.google/research/",
-    "Apple ML Research": "https://machinelearning.apple.com/",
+    # Apple ML Research is the same URL as Apple ML - covered above
     "Meta Research":     "https://research.facebook.com/publications/",
     "Google Research":   "https://research.google/blog/",
     "Nature Machine Intelligence": "https://www.nature.com/natmachintell/articles",
