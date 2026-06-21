@@ -21,7 +21,7 @@ RSS_FEEDS = {
     # Anthropic: No working public RSS feed - using blog scraper instead
     "Google AI Blog":       "https://blog.google/technology/ai/rss/",
     "Google DeepMind":      "https://deepmind.google/blog/rss.xml",
-    "Microsoft AI Blog":    "https://blogs.microsoft.com/ai/feed/",
+    "Microsoft AI Blog":    "https://news.microsoft.com/source/topics/ai/feed/",  # old blogs.microsoft.com/ai/feed/ → 410 Gone
     "AWS Machine Learning": "https://aws.amazon.com/blogs/machine-learning/feed/",
     "Nvidia Blog":          "https://blogs.nvidia.com/feed/",
     "GitHub Blog":          "https://github.blog/feed/",
@@ -67,6 +67,15 @@ RSS_FEEDS = {
     "STAT Health AI":       "https://www.statnews.com/tag/artificial-intelligence/feed/",
     "Nature Machine Intelligence": "https://www.nature.com/natmachintell.rss",
     "Science Daily AI":     "https://www.sciencedaily.com/rss/computers_math/artificial_intelligence.xml",
+    # NIH press pages (nih.gov) hard-block bots (403) — surfaced via Google News RSS instead.
+    "NIH Research News":    "https://news.google.com/rss/search?q=NIH+artificial+intelligence+health+when:7d&hl=en-US&gl=US&ceid=US:en",
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # 🎓 ACADEMIC AI NEWS
+    # news.mit.edu hard-blocks bots (403) regardless of UA/headers — via Google News RSS.
+    # ═══════════════════════════════════════════════════════════════════════
+    "MIT News AI":          "https://news.google.com/rss/search?q=MIT+artificial+intelligence+when:7d&hl=en-US&gl=US&ceid=US:en",
+    "MIT News ML":          "https://news.google.com/rss/search?q=MIT+machine+learning+when:7d&hl=en-US&gl=US&ceid=US:en",
 
     # ═══════════════════════════════════════════════════════════════════════
     # 🤖 ROBOTICS

@@ -63,7 +63,7 @@ BLOG_PAGES = {
     # 🏥 MEDICAL & HEALTHCARE AI
     # ═══════════════════════════════════════════════════════════════════════
     "Google Health AI":  "https://health.google/",
-    "NIH Research News": "https://www.nih.gov/news-events/news-releases",
+    # NIH Research News moved to RSS_FEEDS (Google News) — www.nih.gov returns 403 to scrapers.
     "WEF AI":           "https://www.weforum.org/topics/artificial-intelligence/",
     "Stanford AIMI":    "https://aimi.stanford.edu/news",
     "Nature AI":        "https://www.nature.com/natmachintell/",
@@ -95,10 +95,9 @@ BLOG_PAGES = {
     "NYT AI":           "https://www.nytimes.com/topic/subject/artificial-intelligence",
     "BBC Tech":         "https://www.bbc.co.uk/news/technology",
     "Vox Tech":         "https://www.vox.com/technology",
-    "VentureBeat AI":   "https://venturebeat.com/category/ai/",
+    # VentureBeat AI covered by working RSS feed (RSS_FEEDS) — HTML scrape duplicated it and hit 429.
     "InformationWeek":  "https://www.informationweek.com/machine-learning-ai",
-    "MIT News AI":      "https://news.mit.edu/topic/artificial-intelligence2",
-    "MIT News ML":      "https://news.mit.edu/topic/machine-learning",
+    # MIT News AI / ML moved to RSS_FEEDS (Google News) — news.mit.edu returns 403 to scrapers.
     "ScienceDaily AI":  "https://www.sciencedaily.com/news/computers_math/artificial_intelligence/",
     "TechCrunch GenAI": "https://techcrunch.com/tag/generative-ai/",
 
