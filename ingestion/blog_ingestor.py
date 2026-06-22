@@ -222,7 +222,11 @@ class BlogIngestor:
 
     def _fetch(self, url: str) -> str:
         try:
-            r = self.client.get(url, headers={"User-Agent": "AI-News-Agent/1.0"})
+            r = self.client.get(url, headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AI-News-Agent/1.0",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.9",
+            })
             r.raise_for_status()
             return r.text
         except Exception as e:
@@ -230,12 +234,13 @@ class BlogIngestor:
             return ""
 
     def _is_relevant(self, title: str) -> bool:
-        t = title.lower()
-        has_ai = any(k in t for k in AI_MUST_HAVE)
+        t = f" {title.lower()} "
+        # Word-boundary match so short tokens like "ai" don't hit
+        # "available", "training", "email", "campaign", etc.
+        has_ai = any(re.search(rf"\b{re.escape(k)}\b", t) for k in AI_MUST_HAVE)
         has_launch = any(k in t for k in LAUNCH_KEYWORDS)
-        # Must have at least AI keywords - launch keywords optional but preferred
-        # Relaxed filter to catch more relevant posts
-        return has_ai
+        # Require both an AI topic AND a launch/event signal to cut noise
+        return has_ai and has_launch
 
     def _extract_articles(self, company: str, html: str, base_url: str) -> list[dict]:
         if not html:
