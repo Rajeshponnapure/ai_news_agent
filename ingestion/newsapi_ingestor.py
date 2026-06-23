@@ -3,6 +3,7 @@ NewsAPI Ingestor — Focused on AI launch events from major companies.
 Covers tech launches, marketing AI, and finance AI — user's core domains.
 """
 import logging
+import re
 from datetime import datetime, timezone, timedelta
 
 import httpx
@@ -99,8 +100,9 @@ class NewsAPIIngestor:
 
             if not title or not url or title == "[Removed]":
                 continue
-            # Skip if not about AI at all
-            if "ai" not in f"{title} {description}".lower():
+            # Skip if not about AI at all (word-boundary to avoid matching
+            # "Ukraine", "Spain", "train", "retail", "email", "available", etc.)
+            if not re.search(r'\bai\b', f"{title} {description}", re.IGNORECASE):
                 continue
 
             # Parse timestamp

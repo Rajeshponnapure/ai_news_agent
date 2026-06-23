@@ -80,12 +80,9 @@ def send_pdf_digest():
         processed_entries = entries
     
     # Show category breakdown
-    from reporting.pdf_generator import PDFReportGenerator
-    generator = PDFReportGenerator()
-    
     categorized = {}
     for u in processed_entries:
-        cat = generator._get_category_for_update(u)
+        cat = u.get("category", "OTHER AI NEWS")
         categorized.setdefault(cat, 0)
         categorized[cat] += 1
     

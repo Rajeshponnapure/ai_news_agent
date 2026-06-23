@@ -4,106 +4,16 @@ Focuses on official blogs, release notes, and high-signal tech publications.
 No paywalled, low-signal, or opinion-heavy sources.
 """
 import logging
+import re
 from datetime import datetime, timezone, timedelta
 from typing import Generator
 
 import feedparser
 import httpx
 
+from ingestion.feed_config import get_rss_feeds, get_rss_scopes
+
 logger = logging.getLogger(__name__)
-
-# ── Tier-1 RSS Feeds ───────────────────────────────────────────────────────
-# Only high-signal sources that publish actual launches, releases, and
-# product announcements. No opinion sites, no paywalls.
-RSS_FEEDS = {
-    # ── Official AI Company Blogs ──
-    "OpenAI Blog":          "https://openai.com/news/rss.xml",
-    # Anthropic: No working public RSS feed - using blog scraper instead
-    "Google AI Blog":       "https://blog.google/technology/ai/rss/",
-    "Google DeepMind":      "https://deepmind.google/blog/rss.xml",
-    "Microsoft AI Blog":    "https://news.microsoft.com/source/topics/ai/feed/",  # old blogs.microsoft.com/ai/feed/ → 410 Gone
-    "AWS Machine Learning": "https://aws.amazon.com/blogs/machine-learning/feed/",
-    "Nvidia Blog":          "https://blogs.nvidia.com/feed/",
-    "GitHub Blog":          "https://github.blog/feed/",
-    "Hugging Face Blog":    "https://huggingface.co/blog/feed.xml",
-    "LangChain Blog":       "https://www.langchain.com/blog/rss.xml",
-    "Cohere Blog":          "https://cohere.com/blog/rss.xml",
-    "Amazon Science":      "https://www.amazon.science/index.rss",
-    # Note: Meta AI, Mistral, Stability AI, xAI, Perplexity don't have working public RSS feeds
-
-    # ── Tier-1 Tech News (AI-specific) ──
-    "TechCrunch AI":        "https://techcrunch.com/category/artificial-intelligence/feed/",
-    "VentureBeat AI":       "https://venturebeat.com/category/ai/feed/",
-    "Ars Technica AI":      "https://arstechnica.com/tag/ai/feed/",
-    "MIT Tech Review AI":   "https://www.technologyreview.com/topic/artificial-intelligence/feed",
-    "ZDNet AI":             "https://www.zdnet.com/topic/artificial-intelligence/rss.xml",
-
-    # ── Additional High-Signal AI News ──
-    "AI Business":          "https://aibusiness.com/rss.xml",
-    "Unite.AI":             "https://www.unite.ai/feed/",
-    "Analytics India Mag":  "https://analyticsindiamag.com/feed/",
-    "The Verge AI":         "https://www.theverge.com/rss/index.xml",
-    "Wired AI":             "https://www.wired.com/feed/tag/ai/latest/rss",
-    "CNET AI":              "https://www.cnet.com/rss/news/",
-    # Note: AI Trends RSS times out frequently - disabled
-    # "AI Trends":            "https://www.aitrends.com/feed/",
-    "MarkTechPost AI":      "https://www.marktechpost.com/category/artificial-intelligence/feed/",
-
-    # ── AI in Finance & Marketing ──
-    "CNBC Technology":      "https://www.cnbc.com/id/19854910/device/rss/rss.html",
-    "Forbes Tech":          "https://www.forbes.com/technology/feed/",
-    "Marketing AI Inst.":   "https://www.marketingaiinstitute.com/blog/rss.xml",
-    "Product Hunt AI":      "https://www.producthunt.com/feed",
-
-    # ── Research & Papers (limited to avoid flooding) ──
-    "Papers With Code":     "https://paperswithcode.com/rss",
-    # Note: arXiv feeds temporarily disabled - too many papers flood alerts
-    # "arXiv AI":             "http://export.arxiv.org/rss/cs.AI",
-    # "arXiv ML":             "http://export.arxiv.org/rss/cs.LG",
-
-    # ═══════════════════════════════════════════════════════════════════════
-    # 🏥 MEDICAL & HEALTHCARE AI
-    # ═══════════════════════════════════════════════════════════════════════
-    "STAT Health AI":       "https://www.statnews.com/tag/artificial-intelligence/feed/",
-    "Nature Machine Intelligence": "https://www.nature.com/natmachintell.rss",
-    "Science Daily AI":     "https://www.sciencedaily.com/rss/computers_math/artificial_intelligence.xml",
-    # NIH press pages (nih.gov) hard-block bots (403) — surfaced via Google News RSS instead.
-    "NIH Research News":    "https://news.google.com/rss/search?q=NIH+artificial+intelligence+health+when:7d&hl=en-US&gl=US&ceid=US:en",
-
-    # ═══════════════════════════════════════════════════════════════════════
-    # 🎓 ACADEMIC AI NEWS
-    # news.mit.edu hard-blocks bots (403) regardless of UA/headers — via Google News RSS.
-    # ═══════════════════════════════════════════════════════════════════════
-    "MIT News AI":          "https://news.google.com/rss/search?q=MIT+artificial+intelligence+when:7d&hl=en-US&gl=US&ceid=US:en",
-    "MIT News ML":          "https://news.google.com/rss/search?q=MIT+machine+learning+when:7d&hl=en-US&gl=US&ceid=US:en",
-
-    # ═══════════════════════════════════════════════════════════════════════
-    # 🤖 ROBOTICS
-    # ═══════════════════════════════════════════════════════════════════════
-    "IEEE Spectrum":           "https://spectrum.ieee.org/feed/rss/",
-    "Robotics Business Review": "https://www.roboticsbusinessreview.com/feed/",
-    "The Robot Report":        "https://www.therobotreport.com/feed/",
-    "Robotics 24/7":           "https://www.robotics247.com/rss/",
-    "TechCrunch Robotics":     "https://techcrunch.com/category/robotics/feed/",
-    "Google Research Blog":    "https://research.google/blog/rss/",
-
-    # ═══════════════════════════════════════════════════════════════════════
-    # ⚠️  AI SAFETY, MISUSE & MALFUNCTIONS
-    # ═══════════════════════════════════════════════════════════════════════
-    "AI Incident Database":   "https://incidentdatabase.ai/rss.xml",
-    "Future of Life AI":      "https://futureoflife.org/category/ai/feed/",
-
-    # ═══════════════════════════════════════════════════════════════════════
-    # 🌍 GENERAL TECH & GLOBAL AI NEWS
-    # ═══════════════════════════════════════════════════════════════════════
-    "BBC Tech":               "https://feeds.bbci.co.uk/news/technology/rss.xml",
-    "The Guardian Tech":      "https://www.theguardian.com/technology/rss",
-    "NYT AI":                 "https://www.nytimes.com/svc/collections/v1/publish/https://www.nytimes.com/topic/subject/artificial-intelligence/rss.xml",
-    "WSJ AI":                 "https://feeds.a.dj.com/rss/RSSWSJD.xml",
-    "Vox":                    "https://www.vox.com/rss/index.xml",
-    "Engadget":               "https://www.engadget.com/rss.xml",
-    "Bloomberg Tech":         "https://feeds.bloomberg.com/technology/news.rss",
-}
 
 # Companies whose launches should ALWAYS be included (never filtered out)
 TOP_COMPANIES = {
@@ -137,7 +47,7 @@ LAUNCH_KEYWORDS = [
     "bias", "hallucination", "jailbreak",
 ]
 
-# Domain filter — these are core AI-relevant domains
+# Domain filter — these are core AI-relevant domains (word-boundary for short tokens)
 DOMAIN_KEYWORDS = [
     # Core AI/ML
     "ai", "artificial intelligence", "machine learning", "deep learning",
@@ -170,10 +80,14 @@ DOMAIN_KEYWORDS = [
 ]
 
 
-def _is_relevant(title: str, summary: str = "") -> bool:
+def _is_relevant(title: str, summary: str = "", scope: str = "ai") -> bool:
     """Strict relevance check — must be about AI and from a known domain."""
-    text = f"{title} {summary}".lower()
-    return any(kw in text for kw in DOMAIN_KEYWORDS)
+    if scope == "world":
+        return True  # world scope feeds accept all recent items
+    text = f" {title} {summary} ".lower()
+    # Word-boundary match for short tokens like "ai" to avoid
+    # hitting "available", "training", "email", "campaign", etc.
+    return any(re.search(rf"\b{re.escape(kw)}\b", text) for kw in DOMAIN_KEYWORDS)
 
 
 def _is_launch_event(title: str, summary: str = "") -> bool:
@@ -191,6 +105,8 @@ def _is_top_company(title: str, summary: str = "", feed_name: str = "") -> bool:
 class RSSIngestor:
     def __init__(self):
         self.client = httpx.Client(timeout=20.0, follow_redirects=True)
+        self.rss_feeds = get_rss_feeds()
+        self.rss_scopes = get_rss_scopes()
 
     def _fetch_feed(self, name: str, url: str) -> list[dict]:
         """Fetch and parse a single RSS feed."""
@@ -202,6 +118,7 @@ class RSSIngestor:
             logger.warning("RSS fetch failed [%s]: %s", name, e)
             return []
 
+        scope = self.rss_scopes.get(name, "ai")
         entries = []
         for entry in feed.entries:
             title = entry.get("title", "").strip()
@@ -230,8 +147,8 @@ class RSSIngestor:
             else:
                 ts = "1970-01-01T00:00:00+00:00"
 
-            # Strict relevance: must be AI-related
-            if not _is_relevant(title, summary):
+            # Strict relevance: must be AI-related (or world scope)
+            if not _is_relevant(title, summary, scope):
                 continue
 
             # Determine if this is a launch event
@@ -253,7 +170,7 @@ class RSSIngestor:
 
     def ingest(self) -> list[dict]:
         all_entries = []
-        for name, url in RSS_FEEDS.items():
+        for name, url in self.rss_feeds.items():
             entries = self._fetch_feed(name, url)
             if entries:
                 logger.info("RSS [%s]: %d relevant items", name, len(entries))

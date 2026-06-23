@@ -9,6 +9,22 @@ from config.settings import settings
 logger = logging.getLogger(__name__)
 
 # GitHub repos to monitor for AI model/tool releases
+
+LAUNCH_KEYWORDS = [
+    "release", "launch", "announce", "introduce", "unveil",
+    "new model", "new agent", "available", "update", "upgrade",
+    "open source", "funding", "acqui", "partnership",
+    "ship", "ships", "shipped", "debut",
+]
+
+TOP_COMPANIES = [
+    "openai", "anthropic", "google", "deepmind", "microsoft",
+    "amazon", "aws", "nvidia", "apple", "github",
+    "mistral", "cohere", "perplexity", "xai", "grok", "ollama",
+    "el", "hugging face", "langchain", "gemini", "meta",
+    "stability", "deepeek", "qwen",
+]
+
 GITHUB_REPOS = {
     # ── Major AI Companies ──
     "OpenAI": ["openai/openai-python", "openai/tiktoken", "openai/whisper"],
@@ -99,6 +115,10 @@ class GitHubIngestor:
 
             summary = body[:500] if body else f"Release {tag} for {repo}"
 
+            text = f"{tag} {name} {body}".lower()
+            is_launch = any(kw in text for kw in LAUNCH_KEYWORDS) if LAUNCH_KEYWORDS else True
+            is_top_co = any(co in text for co in TOP_COMPANIES)
+
             yield {
                 "title": f"{repo}: {name}"[:300],
                 "company": company,
@@ -106,6 +126,8 @@ class GitHubIngestor:
                 "timestamp": published or "1970-01-01T00:00:00+00:00",
                 "source_url": html_url,
                 "source_name": "github",
+                "is_launch": is_launch,
+                "is_top_company": is_top_co,
             }
 
     def ingest(self) -> list[dict]:

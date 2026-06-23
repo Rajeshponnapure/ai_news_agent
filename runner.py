@@ -6,6 +6,7 @@ Commands:
     python runner.py ingest        Run one ingestion cycle (fetch + store)
     python runner.py alert-check   Check for new launch events -> send alert email
     python runner.py digest        Generate PDF + send daily digest email
+    python runner.py feed-health   Check feed health, auto-repair broken feeds
     python runner.py ingest-alert  Ingest then immediately check for alerts (combined)
     python runner.py both          Ingest + digest (used by daily_digest.yml)
 """
@@ -225,6 +226,30 @@ def main():
     elif command == "cleanup":
         run_cleanup()
         sys.exit(0)
+
+    elif command == "feed-health":
+        from ingestion.feed_health import run_feed_health_check
+        print("=== FEED HEALTH CHECK ===")
+        report = run_feed_health_check()
+        print(f"\nChecked: {report['checked']}")
+        print(f"Healthy: {report['healthy']}")
+        print(f"Repaired: {report['repaired']}")
+        print(f"Disabled: {report['disabled']}")
+        if report["errors"]:
+            print("\nErrors:")
+            for e in report["errors"]:
+                print(f"  - {e}")
+        if report["details"]:
+            print("\nDetails:")
+            for d in report["details"]:
+                status = d["status"].upper()
+                icon = {"healthy": "OK", "repaired": "FIXED", "disabled": "OFF"}.get(d["status"], "?")
+                print(f"  [{icon}] {d['name']}: {d.get('url', 'N/A')}")
+                if d.get("error"):
+                    print(f"         Error: {d['error']}")
+                if d.get("repaired"):
+                    print(f"         Repaired to: {d.get('final_url')}")
+        sys.exit(0 if not report["errors"] else 0)  # don't fail CI on errors
 
     else:
         logger.error("Unknown command: %s", command)
